@@ -1,0 +1,505 @@
+{
+    "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+    "name": "WebSpec",
+    "scopeName": "source.webspec",
+    "patterns": [
+        { "include": "#comments" },
+        { "include": "#strings" },
+        { "include": "#variables" },
+        { "include": "#ordinals" },
+        { "include": "#numbers" },
+        { "include": "#navigation" },
+        { "include": "#actions" },
+        { "include": "#assertions" },
+        { "include": "#waits" },
+        { "include": "#control-flow" },
+        { "include": "#data-driven" },
+        { "include": "#definitions" },
+        { "include": "#import" },
+        { "include": "#variables-set" },
+        { "include": "#logging" },
+        { "include": "#screenshots" },
+        { "include": "#alerts" },
+        { "include": "#frames" },
+        { "include": "#windows" },
+        { "include": "#extract" },
+        { "include": "#element-types" },
+        { "include": "#selectors" },
+        { "include": "#visibility" },
+        { "include": "#operators" },
+        { "include": "#misc-keywords" }
+    ],
+    "repository": {
+
+        "comments": {
+            "match": "#.*$",
+            "name": "comment.line.number-sign.webspec"
+        },
+
+        "strings": {
+            "patterns": [
+                {
+                    "name": "string.quoted.double.webspec",
+                    "begin": "\"",
+                    "end": "\"",
+                    "patterns": [
+                        {
+                            "name": "constant.character.escape.webspec",
+                            "match": "\\\\(?:[\"\\\\ntr]|\\d)"
+                        },
+                        {
+                            "name": "variable.interpolation.webspec",
+                            "match": "\\$\\{[a-zA-Z_][a-zA-Z0-9_]*\\}"
+                        }
+                    ]
+                },
+                {
+                    "name": "string.quoted.single.webspec",
+                    "begin": "'",
+                    "end": "'",
+                    "patterns": [
+                        {
+                            "name": "constant.character.escape.webspec",
+                            "match": "\\\\(?:['\\\\ntr])"
+                        }
+                    ]
+                }
+            ]
+        },
+
+        "variables": {
+            "patterns": [
+                {
+                    "name": "variable.other.braced.webspec",
+                    "match": "\\$\\{[a-zA-Z_][a-zA-Z0-9_]*\\}"
+                },
+                {
+                    "name": "variable.other.webspec",
+                    "match": "\\$[a-zA-Z_][a-zA-Z0-9_]*"
+                }
+            ]
+        },
+
+        "ordinals": {
+            "match": "\\b(\\d+)(st|nd|rd|th)\\b",
+            "captures": {
+                "1": { "name": "constant.numeric.ordinal.webspec" },
+                "2": { "name": "constant.numeric.ordinal.suffix.webspec" }
+            }
+        },
+
+        "numbers": {
+            "match": "\\b\\d+(\\.\\d+)?\\b",
+            "name": "constant.numeric.webspec"
+        },
+
+        "navigation": {
+            "patterns": [
+                {
+                    "match": "(?i)\\b(navigate)\\s+(to)\\b",
+                    "captures": {
+                        "1": { "name": "keyword.control.navigation.webspec" },
+                        "2": { "name": "keyword.control.navigation.webspec" }
+                    }
+                },
+                {
+                    "match": "(?i)\\b(go)\\s+(back|forward)\\b",
+                    "captures": {
+                        "1": { "name": "keyword.control.navigation.webspec" },
+                        "2": { "name": "keyword.control.navigation.webspec" }
+                    }
+                },
+                {
+                    "match": "(?i)\\b(refresh)\\b",
+                    "name": "keyword.control.navigation.webspec"
+                },
+                {
+                    "match": "(?i)\\b(switch)\\s+(to)\\s+(tab)\\b",
+                    "captures": {
+                        "1": { "name": "keyword.control.navigation.webspec" },
+                        "2": { "name": "keyword.control.navigation.webspec" },
+                        "3": { "name": "keyword.control.navigation.webspec" }
+                    }
+                }
+            ]
+        },
+
+        "actions": {
+            "patterns": [
+                {
+                    "match": "(?i)\\b(double\\s+click|right\\s+click|click)\\b",
+                    "name": "keyword.action.click.webspec"
+                },
+                {
+                    "match": "(?i)\\b(type)\\b(?=\\s)",
+                    "name": "keyword.action.type.webspec"
+                },
+                {
+                    "match": "(?i)\\b(into)\\b",
+                    "name": "keyword.action.preposition.webspec"
+                },
+                {
+                    "match": "(?i)\\b(append)\\b",
+                    "name": "keyword.action.webspec"
+                },
+                {
+                    "match": "(?i)\\b(clear)\\b",
+                    "name": "keyword.action.webspec"
+                },
+                {
+                    "match": "(?i)\\b(select)\\b(?=\\s)",
+                    "name": "keyword.action.select.webspec"
+                },
+                {
+                    "match": "(?i)\\b(from)\\b",
+                    "name": "keyword.action.preposition.webspec"
+                },
+                {
+                    "match": "(?i)\\b(check|uncheck|toggle)\\b",
+                    "name": "keyword.action.check.webspec"
+                },
+                {
+                    "match": "(?i)\\b(hover|focus)\\b",
+                    "name": "keyword.action.webspec"
+                },
+                {
+                    "match": "(?i)\\b(scroll)\\s+(to|down|up)\\b",
+                    "captures": {
+                        "1": { "name": "keyword.action.scroll.webspec" },
+                        "2": { "name": "keyword.action.scroll.webspec" }
+                    }
+                },
+                {
+                    "match": "(?i)\\b(pixels)\\b",
+                    "name": "keyword.action.scroll.unit.webspec"
+                },
+                {
+                    "match": "(?i)\\b(drag)\\b",
+                    "name": "keyword.action.webspec"
+                },
+                {
+                    "match": "(?i)\\b(press)\\s+(key)\\b",
+                    "captures": {
+                        "1": { "name": "keyword.action.key.webspec" },
+                        "2": { "name": "keyword.action.key.webspec" }
+                    }
+                },
+                {
+                    "match": "(?i)\\b(upload)\\b",
+                    "name": "keyword.action.webspec"
+                },
+                {
+                    "match": "(?i)\\b(submit)\\b",
+                    "name": "keyword.action.webspec"
+                },
+                {
+                    "match": "(?i)\\b(execute)\\b",
+                    "name": "keyword.action.execute.webspec"
+                }
+            ]
+        },
+
+        "assertions": {
+            "patterns": [
+                {
+                    "match": "(?i)\\b(verify)\\b",
+                    "name": "keyword.assertion.webspec"
+                },
+                {
+                    "match": "(?i)\\b(has)\\s+(text|attr|class|style)\\b",
+                    "captures": {
+                        "1": { "name": "keyword.assertion.has.webspec" },
+                        "2": { "name": "keyword.assertion.property.webspec" }
+                    }
+                },
+                {
+                    "match": "(?i)\\b(contains|containing|matches|matching)\\b",
+                    "name": "keyword.assertion.operator.webspec"
+                },
+                {
+                    "match": "(?i)\\b(count)\\b",
+                    "name": "keyword.assertion.count.webspec"
+                },
+                {
+                    "match": "(?i)\\b(starts|ends)\\s+(with)\\b",
+                    "captures": {
+                        "1": { "name": "keyword.assertion.operator.webspec" },
+                        "2": { "name": "keyword.assertion.operator.webspec" }
+                    }
+                },
+                {
+                    "match": "(?i)\\b(url|title|cookie|downloaded)\\b",
+                    "name": "keyword.assertion.target.webspec"
+                },
+                {
+                    "match": "(?i)\\b(greater|less)\\s+(than)\\b",
+                    "captures": {
+                        "1": { "name": "keyword.operator.comparison.webspec" },
+                        "2": { "name": "keyword.operator.comparison.webspec" }
+                    }
+                },
+                {
+                    "match": "(?i)\\b(is|equals)\\b",
+                    "name": "keyword.operator.comparison.webspec"
+                }
+            ]
+        },
+
+        "waits": {
+            "patterns": [
+                {
+                    "match": "(?i)\\b(wait)\\s+(for|until|up)\\b",
+                    "captures": {
+                        "1": { "name": "keyword.control.wait.webspec" },
+                        "2": { "name": "keyword.control.wait.webspec" }
+                    }
+                },
+                {
+                    "match": "(?i)\\b(wait)\\b",
+                    "name": "keyword.control.wait.webspec"
+                },
+                {
+                    "match": "(?i)\\b(seconds)\\b",
+                    "name": "keyword.control.wait.unit.webspec"
+                },
+                {
+                    "match": "(?i)\\b(to)\\s+(be)\\b",
+                    "captures": {
+                        "1": { "name": "keyword.control.wait.webspec" },
+                        "2": { "name": "keyword.control.wait.webspec" }
+                    }
+                }
+            ]
+        },
+
+        "control-flow": {
+            "patterns": [
+                {
+                    "match": "(?i)\\b(if|then|else|end)\\b",
+                    "name": "keyword.control.flow.webspec"
+                },
+                {
+                    "match": "(?i)\\b(repeat)\\s+(while)\\b",
+                    "captures": {
+                        "1": { "name": "keyword.control.loop.webspec" },
+                        "2": { "name": "keyword.control.loop.webspec" }
+                    }
+                },
+                {
+                    "match": "(?i)\\b(repeat)\\b",
+                    "name": "keyword.control.loop.webspec"
+                },
+                {
+                    "match": "(?i)\\b(times)\\b",
+                    "name": "keyword.control.loop.webspec"
+                },
+                {
+                    "match": "(?i)\\b(for)\\s+(each)\\b",
+                    "captures": {
+                        "1": { "name": "keyword.control.loop.webspec" },
+                        "2": { "name": "keyword.control.loop.webspec" }
+                    }
+                },
+                {
+                    "match": "(?i)\\b(as)\\b",
+                    "name": "keyword.control.binding.webspec"
+                },
+                {
+                    "match": "(?i)\\b(do)\\b",
+                    "name": "keyword.control.flow.webspec"
+                },
+                {
+                    "match": "(?i)\\b(try)\\b",
+                    "name": "keyword.control.trycatch.webspec"
+                },
+                {
+                    "match": "(?i)\\b(on)\\s+(error)\\b",
+                    "captures": {
+                        "1": { "name": "keyword.control.trycatch.webspec" },
+                        "2": { "name": "keyword.control.trycatch.webspec" }
+                    }
+                },
+                {
+                    "match": "(?i)\\b(and|or|not)\\b",
+                    "name": "keyword.operator.logical.webspec"
+                }
+            ]
+        },
+
+        "data-driven": {
+            "match": "(?i)\\b(using)\\b",
+            "name": "keyword.control.data.webspec"
+        },
+
+        "definitions": {
+            "patterns": [
+                {
+                    "match": "(?i)\\b(define)\\b",
+                    "name": "keyword.definition.webspec"
+                },
+                {
+                    "match": "(?i)\\b(call)\\b",
+                    "name": "keyword.call.webspec"
+                }
+            ]
+        },
+
+        "import": {
+            "match": "(?i)\\b(import)\\b",
+            "name": "keyword.control.import.webspec"
+        },
+
+        "variables-set": {
+            "patterns": [
+                {
+                    "match": "(?i)\\b(set)\\b",
+                    "name": "keyword.variable.set.webspec"
+                },
+                {
+                    "match": "(?i)\\b(to)\\b",
+                    "name": "keyword.variable.preposition.webspec"
+                },
+                {
+                    "match": "(?i)\\b(text|attr|value|count)\\s+(of)\\b",
+                    "captures": {
+                        "1": { "name": "keyword.variable.extract.webspec" },
+                        "2": { "name": "keyword.variable.preposition.webspec" }
+                    }
+                }
+            ]
+        },
+
+        "logging": {
+            "match": "(?i)\\b(log)\\b",
+            "name": "keyword.other.log.webspec"
+        },
+
+        "screenshots": {
+            "patterns": [
+                {
+                    "match": "(?i)\\b(take)\\s+(screenshot)\\b",
+                    "captures": {
+                        "1": { "name": "keyword.other.screenshot.webspec" },
+                        "2": { "name": "keyword.other.screenshot.webspec" }
+                    }
+                },
+                {
+                    "match": "(?i)\\b(save)\\s+(source|cookies)\\b",
+                    "captures": {
+                        "1": { "name": "keyword.other.save.webspec" },
+                        "2": { "name": "keyword.other.save.webspec" }
+                    }
+                }
+            ]
+        },
+
+        "alerts": {
+            "patterns": [
+                {
+                    "match": "(?i)\\b(accept|dismiss)\\s+(alert)\\b",
+                    "captures": {
+                        "1": { "name": "keyword.other.alert.webspec" },
+                        "2": { "name": "keyword.other.alert.webspec" }
+                    }
+                },
+                {
+                    "match": "(?i)\\b(alert)\\b",
+                    "name": "keyword.other.alert.webspec"
+                }
+            ]
+        },
+
+        "frames": {
+            "patterns": [
+                {
+                    "match": "(?i)\\b(switch)\\s+(to)\\s+(frame|default\\s+frame|window)\\b",
+                    "captures": {
+                        "1": { "name": "keyword.control.frame.webspec" },
+                        "2": { "name": "keyword.control.frame.webspec" },
+                        "3": { "name": "keyword.control.frame.webspec" }
+                    }
+                }
+            ]
+        },
+
+        "windows": {
+            "patterns": [
+                {
+                    "match": "(?i)\\b(open)\\s+(new)\\s+(window)\\b",
+                    "captures": {
+                        "1": { "name": "keyword.control.window.webspec" },
+                        "2": { "name": "keyword.control.window.webspec" },
+                        "3": { "name": "keyword.control.window.webspec" }
+                    }
+                },
+                {
+                    "match": "(?i)\\b(close)\\s+(window)\\b",
+                    "captures": {
+                        "1": { "name": "keyword.control.window.webspec" },
+                        "2": { "name": "keyword.control.window.webspec" }
+                    }
+                }
+            ]
+        },
+
+        "extract": {
+            "match": "(?i)\\b(save)\\s+(source|cookies)\\s+(as)\\b",
+            "captures": {
+                "1": { "name": "keyword.other.save.webspec" },
+                "2": { "name": "keyword.other.save.webspec" },
+                "3": { "name": "keyword.other.save.webspec" }
+            }
+        },
+
+        "element-types": {
+            "match": "(?i)\\b(the)\\s+(button|link|input|dropdown|checkbox|radio|image|heading|table|row|cell|element|field|form|section|dialog|menu|item)\\b",
+            "captures": {
+                "1": { "name": "keyword.element.article.webspec" },
+                "2": { "name": "entity.name.type.element.webspec" }
+            }
+        },
+
+        "selectors": {
+            "patterns": [
+                {
+                    "match": "(?i)\\b(with)\\s+(class|id|text|attr|placeholder|value)\\b",
+                    "captures": {
+                        "1": { "name": "keyword.selector.webspec" },
+                        "2": { "name": "keyword.selector.property.webspec" }
+                    }
+                },
+                {
+                    "match": "(?i)\\b(near|inside|above|below|after|before)\\b",
+                    "name": "keyword.selector.spatial.webspec"
+                }
+            ]
+        },
+
+        "visibility": {
+            "match": "(?i)\\b(visible|hidden|enabled|disabled|selected|checked|empty|focused)\\b",
+            "name": "constant.language.visibility.webspec"
+        },
+
+        "operators": {
+            "match": "\\+",
+            "name": "keyword.operator.arithmetic.webspec"
+        },
+
+        "misc-keywords": {
+            "patterns": [
+                {
+                    "match": "(?i)\\b(with)\\b",
+                    "name": "keyword.other.with.webspec"
+                },
+                {
+                    "match": "(?i)\\b(of)\\b",
+                    "name": "keyword.other.of.webspec"
+                },
+                {
+                    "match": "(?i)\\b(for)\\b",
+                    "name": "keyword.other.for.webspec"
+                }
+            ]
+        }
+    }
+}

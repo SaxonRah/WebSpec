@@ -1,0 +1,364 @@
+{
+  "$schema": "vscode://schemas/color-theme",
+  "name": "WebSpec Light",
+  "type": "light",
+  "colors": {
+    "editor.background": "#f5f5f7",
+    "editor.foreground": "#343b58",
+    "editor.lineHighlightBackground": "#edeef2",
+    "editor.selectionBackground": "#b4c0e8",
+    "editorCursor.foreground": "#343b58",
+    "editorLineNumber.foreground": "#9ca0b0",
+    "editorLineNumber.activeForeground": "#6c7086",
+    "editorBracketMatch.background": "#b4c0e855",
+    "editorBracketMatch.border": "#3562d4"
+  },
+  "tokenColors": [
+    {
+      "name": "Comments",
+      "scope": "comment.line.number-sign.webspec",
+      "settings": {
+        "foreground": "#9ca0b0",
+        "fontStyle": "italic"
+      }
+    },
+    {
+      "name": "Strings",
+      "scope": [
+        "string.quoted.double.webspec",
+        "string.quoted.single.webspec"
+      ],
+      "settings": {
+        "foreground": "#4e7a2d"
+      }
+    },
+    {
+      "name": "Escape characters inside strings",
+      "scope": "constant.character.escape.webspec",
+      "settings": {
+        "foreground": "#2b7a78"
+      }
+    },
+    {
+      "name": "Interpolated variables inside strings",
+      "scope": "variable.interpolation.webspec",
+      "settings": {
+        "foreground": "#343b58",
+        "fontStyle": "italic"
+      }
+    },
+    {
+      "name": "Variables",
+      "scope": [
+        "variable.other.webspec",
+        "variable.other.braced.webspec"
+      ],
+      "settings": {
+        "foreground": "#343b58",
+        "fontStyle": "italic"
+      }
+    },
+    {
+      "name": "Numbers",
+      "scope": "constant.numeric.webspec",
+      "settings": {
+        "foreground": "#b5540a"
+      }
+    },
+    {
+      "name": "Ordinals",
+      "scope": [
+        "constant.numeric.ordinal.webspec",
+        "constant.numeric.ordinal.suffix.webspec"
+      ],
+      "settings": {
+        "foreground": "#b5540a"
+      }
+    },
+    {
+      "name": "Navigation keywords",
+      "scope": "keyword.control.navigation.webspec",
+      "settings": {
+        "foreground": "#7847bd"
+      }
+    },
+    {
+      "name": "Action keywords",
+      "scope": [
+        "keyword.action.click.webspec",
+        "keyword.action.type.webspec",
+        "keyword.action.select.webspec",
+        "keyword.action.check.webspec",
+        "keyword.action.scroll.webspec",
+        "keyword.action.key.webspec",
+        "keyword.action.execute.webspec",
+        "keyword.action.webspec"
+      ],
+      "settings": {
+        "foreground": "#3562d4",
+        "fontStyle": "bold"
+      }
+    },
+    {
+      "name": "Action prepositions (into, from)",
+      "scope": "keyword.action.preposition.webspec",
+      "settings": {
+        "foreground": "#9ca0b0"
+      }
+    },
+    {
+      "name": "Scroll unit (pixels)",
+      "scope": "keyword.action.scroll.unit.webspec",
+      "settings": {
+        "foreground": "#3562d4"
+      }
+    },
+    {
+      "name": "Verify keyword",
+      "scope": "keyword.assertion.webspec",
+      "settings": {
+        "foreground": "#2b7a78",
+        "fontStyle": "bold"
+      }
+    },
+    {
+      "name": "Assertion sub-keywords (has, count)",
+      "scope": [
+        "keyword.assertion.has.webspec",
+        "keyword.assertion.count.webspec"
+      ],
+      "settings": {
+        "foreground": "#2b7a78"
+      }
+    },
+    {
+      "name": "Assertion properties (text, attr, class, style after has)",
+      "scope": "keyword.assertion.property.webspec",
+      "settings": {
+        "foreground": "#1a6fa0"
+      }
+    },
+    {
+      "name": "Assertion operators (contains, matches, starts with)",
+      "scope": "keyword.assertion.operator.webspec",
+      "settings": {
+        "foreground": "#166b8a"
+      }
+    },
+    {
+      "name": "Assertion targets (url, title, cookie, downloaded)",
+      "scope": "keyword.assertion.target.webspec",
+      "settings": {
+        "foreground": "#2b7a78",
+        "fontStyle": "italic"
+      }
+    },
+    {
+      "name": "Comparison operators (is, equals, greater than)",
+      "scope": "keyword.operator.comparison.webspec",
+      "settings": {
+        "foreground": "#166b8a"
+      }
+    },
+    {
+      "name": "Control flow (if, then, else, end, do)",
+      "scope": "keyword.control.flow.webspec",
+      "settings": {
+        "foreground": "#b5540a"
+      }
+    },
+    {
+      "name": "Loop keywords (repeat, while, times, for each)",
+      "scope": "keyword.control.loop.webspec",
+      "settings": {
+        "foreground": "#b5540a"
+      }
+    },
+    {
+      "name": "Try and on error",
+      "scope": "keyword.control.trycatch.webspec",
+      "settings": {
+        "foreground": "#b5540a"
+      }
+    },
+    {
+      "name": "Binding keyword (as)",
+      "scope": "keyword.control.binding.webspec",
+      "settings": {
+        "foreground": "#b5540a"
+      }
+    },
+    {
+      "name": "Logical operators (and, or, not)",
+      "scope": "keyword.operator.logical.webspec",
+      "settings": {
+        "foreground": "#7847bd"
+      }
+    },
+    {
+      "name": "Wait keywords",
+      "scope": "keyword.control.wait.webspec",
+      "settings": {
+        "foreground": "#946800"
+      }
+    },
+    {
+      "name": "Wait unit (seconds)",
+      "scope": "keyword.control.wait.unit.webspec",
+      "settings": {
+        "foreground": "#946800"
+      }
+    },
+    {
+      "name": "Data-driven keyword (using)",
+      "scope": "keyword.control.data.webspec",
+      "settings": {
+        "foreground": "#7847bd"
+      }
+    },
+    {
+      "name": "Define keyword",
+      "scope": "keyword.definition.webspec",
+      "settings": {
+        "foreground": "#3562d4",
+        "fontStyle": "bold"
+      }
+    },
+    {
+      "name": "Call keyword",
+      "scope": "keyword.call.webspec",
+      "settings": {
+        "foreground": "#3562d4",
+        "fontStyle": "bold"
+      }
+    },
+    {
+      "name": "Import keyword",
+      "scope": "keyword.control.import.webspec",
+      "settings": {
+        "foreground": "#7847bd"
+      }
+    },
+    {
+      "name": "Set keyword",
+      "scope": "keyword.variable.set.webspec",
+      "settings": {
+        "foreground": "#3562d4",
+        "fontStyle": "bold"
+      }
+    },
+    {
+      "name": "Variable prepositions (to, of)",
+      "scope": "keyword.variable.preposition.webspec",
+      "settings": {
+        "foreground": "#9ca0b0"
+      }
+    },
+    {
+      "name": "Variable extract targets (text, attr, value, count of)",
+      "scope": "keyword.variable.extract.webspec",
+      "settings": {
+        "foreground": "#1a6fa0"
+      }
+    },
+    {
+      "name": "Log keyword",
+      "scope": "keyword.other.log.webspec",
+      "settings": {
+        "foreground": "#946800"
+      }
+    },
+    {
+      "name": "Screenshot and save keywords",
+      "scope": [
+        "keyword.other.screenshot.webspec",
+        "keyword.other.save.webspec"
+      ],
+      "settings": {
+        "foreground": "#946800"
+      }
+    },
+    {
+      "name": "Alert keywords",
+      "scope": "keyword.other.alert.webspec",
+      "settings": {
+        "foreground": "#c4324a"
+      }
+    },
+    {
+      "name": "Frame switching keywords",
+      "scope": "keyword.control.frame.webspec",
+      "settings": {
+        "foreground": "#c4324a"
+      }
+    },
+    {
+      "name": "Window keywords",
+      "scope": "keyword.control.window.webspec",
+      "settings": {
+        "foreground": "#c4324a"
+      }
+    },
+    {
+      "name": "Article the before element types",
+      "scope": "keyword.element.article.webspec",
+      "settings": {
+        "foreground": "#9ca0b0"
+      }
+    },
+    {
+      "name": "Element type names",
+      "scope": "entity.name.type.element.webspec",
+      "settings": {
+        "foreground": "#0b7e7b"
+      }
+    },
+    {
+      "name": "Selector keyword (with)",
+      "scope": "keyword.selector.webspec",
+      "settings": {
+        "foreground": "#166b8a"
+      }
+    },
+    {
+      "name": "Selector properties (class, id, text, attr, placeholder, value)",
+      "scope": "keyword.selector.property.webspec",
+      "settings": {
+        "foreground": "#1a6fa0"
+      }
+    },
+    {
+      "name": "Spatial selectors (near, inside, above, below)",
+      "scope": "keyword.selector.spatial.webspec",
+      "settings": {
+        "foreground": "#166b8a"
+      }
+    },
+    {
+      "name": "Visibility states",
+      "scope": "constant.language.visibility.webspec",
+      "settings": {
+        "foreground": "#2b7a78",
+        "fontStyle": "italic"
+      }
+    },
+    {
+      "name": "Plus operator",
+      "scope": "keyword.operator.arithmetic.webspec",
+      "settings": {
+        "foreground": "#166b8a"
+      }
+    },
+    {
+      "name": "Misc noise keywords (with, of, for)",
+      "scope": [
+        "keyword.other.with.webspec",
+        "keyword.other.of.webspec",
+        "keyword.other.for.webspec"
+      ],
+      "settings": {
+        "foreground": "#9ca0b0"
+      }
+    }
+  ]
+}

@@ -1,0 +1,349 @@
+{
+    "Navigate to URL": {
+        "prefix": "nav",
+        "body": [
+            "navigate to \"${1:https://}\"",
+            "$0"
+        ],
+        "description": "Navigate to a URL"
+    },
+    "Click element": {
+        "prefix": "click",
+        "body": [
+            "click the ${1|button,link,element,input,heading|} \"${2:text}\"",
+            "$0"
+        ],
+        "description": "Click an element by text"
+    },
+    "Click with selector": {
+        "prefix": "clickid",
+        "body": [
+            "click the ${1|button,element,input|} with id \"${2:id}\"",
+            "$0"
+        ],
+        "description": "Click an element by ID"
+    },
+    "Type into input": {
+        "prefix": "type",
+        "body": [
+            "type \"${1:value}\" into the ${2|input,field|} near \"${3:label}\"",
+            "$0"
+        ],
+        "description": "Type text into a form field"
+    },
+    "Type by placeholder": {
+        "prefix": "typepl",
+        "body": [
+            "type \"${1:value}\" into the input with placeholder \"${2:placeholder}\"",
+            "$0"
+        ],
+        "description": "Type into input by placeholder"
+    },
+    "Select dropdown": {
+        "prefix": "sel",
+        "body": [
+            "select \"${1:option}\" from the dropdown near \"${2:label}\"",
+            "$0"
+        ],
+        "description": "Select a dropdown option"
+    },
+    "Check checkbox": {
+        "prefix": "check",
+        "body": [
+            "check the checkbox near \"${1:label}\"",
+            "$0"
+        ],
+        "description": "Check a checkbox"
+    },
+    "Verify visible": {
+        "prefix": "vvis",
+        "body": [
+            "verify the ${1|element,button,heading,link|} \"${2:text}\" is visible",
+            "$0"
+        ],
+        "description": "Verify element is visible"
+    },
+    "Verify text": {
+        "prefix": "vtext",
+        "body": [
+            "verify the element with id \"${1:id}\" has text \"${2:expected}\"",
+            "$0"
+        ],
+        "description": "Verify element text content"
+    },
+    "Verify contains": {
+        "prefix": "vcon",
+        "body": [
+            "verify the ${1|element,heading|} ${2|with id,with class,containing|} \"${3:selector}\" contains \"${4:text}\"",
+            "$0"
+        ],
+        "description": "Verify element contains text"
+    },
+    "Verify URL": {
+        "prefix": "vurl",
+        "body": [
+            "verify url contains \"${1:path}\"",
+            "$0"
+        ],
+        "description": "Verify current URL"
+    },
+    "Verify title": {
+        "prefix": "vtitle",
+        "body": [
+            "verify title ${1|is,contains|} \"${2:title}\"",
+            "$0"
+        ],
+        "description": "Verify page title"
+    },
+    "Verify count": {
+        "prefix": "vcnt",
+        "body": [
+            "verify the element with class \"${1:class}\" count ${2|is,greater than,less than|} ${3:number}",
+            "$0"
+        ],
+        "description": "Verify element count"
+    },
+    "Set variable from text": {
+        "prefix": "settext",
+        "body": [
+            "set \\$${1:name} to text of the ${2|element,heading,button|} ${3|with id,with class,near|} \"${4:selector}\"",
+            "$0"
+        ],
+        "description": "Set variable from element text"
+    },
+    "Set variable": {
+        "prefix": "setvar",
+        "body": [
+            "set \\$${1:name} to \"${2:value}\"",
+            "$0"
+        ],
+        "description": "Set a string variable"
+    },
+    "Set from count": {
+        "prefix": "setcnt",
+        "body": [
+            "set \\$${1:count} to count of the ${2|element,row,button|} with class \"${3:class}\"",
+            "$0"
+        ],
+        "description": "Set variable from element count"
+    },
+    "Log message": {
+        "prefix": "log",
+        "body": [
+            "log \"${1:message}\"",
+            "$0"
+        ],
+        "description": "Log a message"
+    },
+    "Log variable": {
+        "prefix": "logv",
+        "body": [
+            "log \"${1:label}: \" + \\$${2:var}",
+            "$0"
+        ],
+        "description": "Log a variable with label"
+    },
+    "Wait seconds": {
+        "prefix": "wait",
+        "body": [
+            "wait ${1:2} seconds",
+            "$0"
+        ],
+        "description": "Wait for a fixed duration"
+    },
+    "Wait for element": {
+        "prefix": "waitfor",
+        "body": [
+            "wait for the ${1|element,button,heading|} \"${2:text}\"",
+            "$0"
+        ],
+        "description": "Wait for an element to appear"
+    },
+    "Wait until URL": {
+        "prefix": "waiturl",
+        "body": [
+            "wait until url contains \"${1:/path}\"",
+            "$0"
+        ],
+        "description": "Wait until URL contains a string"
+    },
+    "If then": {
+        "prefix": "if",
+        "body": [
+            "if ${1:the button \"OK\" is visible} then",
+            "    ${2:click the button \"OK\"}",
+            "end",
+            "$0"
+        ],
+        "description": "If-then block"
+    },
+    "If then else": {
+        "prefix": "ifelse",
+        "body": [
+            "if ${1:condition} then",
+            "    ${2:then_body}",
+            "else",
+            "    ${3:else_body}",
+            "end",
+            "$0"
+        ],
+        "description": "If-then-else block"
+    },
+    "Repeat N times": {
+        "prefix": "repeat",
+        "body": [
+            "repeat ${1:3} times",
+            "    ${2:body}",
+            "end",
+            "$0"
+        ],
+        "description": "Repeat a fixed number of times"
+    },
+    "Repeat while": {
+        "prefix": "while",
+        "body": [
+            "repeat while ${1:the button \"Next\" is visible}",
+            "    ${2:click the button \"Next\"}",
+            "    wait 1 seconds",
+            "end",
+            "$0"
+        ],
+        "description": "Repeat while condition holds"
+    },
+    "For each": {
+        "prefix": "foreach",
+        "body": [
+            "for each the ${1|row,element,item|} ${2|inside the table,,with class \"items\"|} as \\$${3:item}",
+            "    ${4:body}",
+            "end",
+            "$0"
+        ],
+        "description": "Iterate over elements"
+    },
+    "Try catch": {
+        "prefix": "try",
+        "body": [
+            "try",
+            "    ${1:body}",
+            "on error",
+            "    log \"Error: \" + \\$_error",
+            "end",
+            "$0"
+        ],
+        "description": "Try-catch error handler"
+    },
+    "Define subroutine": {
+        "prefix": "define",
+        "body": [
+            "define \"${1:name}\" as",
+            "    ${2:body}",
+            "end",
+            "$0"
+        ],
+        "description": "Define a named subroutine"
+    },
+    "Call subroutine": {
+        "prefix": "call",
+        "body": [
+            "call \"${1:name}\"",
+            "$0"
+        ],
+        "description": "Call a named subroutine"
+    },
+    "Using data file": {
+        "prefix": "using",
+        "body": [
+            "using \"${1:data.csv}\"",
+            "    ${2:body}",
+            "end",
+            "$0"
+        ],
+        "description": "Data-driven test block"
+    },
+    "Import script": {
+        "prefix": "import",
+        "body": [
+            "import \"${1:common/setup.ws}\"",
+            "$0"
+        ],
+        "description": "Import another WebSpec script"
+    },
+    "Take screenshot": {
+        "prefix": "ss",
+        "body": [
+            "take screenshot as \"${1:name}.png\"",
+            "$0"
+        ],
+        "description": "Take a named screenshot"
+    },
+    "Execute JavaScript": {
+        "prefix": "exec",
+        "body": [
+            "execute \"${1:document.title = 'test'}\"",
+            "$0"
+        ],
+        "description": "Execute raw JavaScript"
+    },
+    "Switch to frame": {
+        "prefix": "frame",
+        "body": [
+            "switch to frame the element with id \"${1:frame-id}\"",
+            "${2:body}",
+            "switch to default frame",
+            "$0"
+        ],
+        "description": "Switch into and out of an iframe"
+    },
+    "Accept alert": {
+        "prefix": "alert",
+        "body": [
+            "${1|accept,dismiss|} alert",
+            "$0"
+        ],
+        "description": "Handle a browser alert"
+    },
+    "Press key": {
+        "prefix": "key",
+        "body": [
+            "press key \"${1|enter,tab,escape,backspace|}\"",
+            "$0"
+        ],
+        "description": "Press a keyboard key"
+    },
+    "Full login flow": {
+        "prefix": "login",
+        "body": [
+            "navigate to \"${1:https://myapp.com/login}\"",
+            "type \"${2:user@test.com}\" into the input near \"${3:Email}\"",
+            "type \"${4:password123}\" into the input near \"${5:Password}\"",
+            "click the button \"${6:Sign In}\"",
+            "wait until url contains \"${7:/dashboard}\"",
+            "verify the heading \"${8:Dashboard}\" is visible",
+            "$0"
+        ],
+        "description": "Complete login flow template"
+    },
+    "Full test template": {
+        "prefix": "wstest",
+        "body": [
+            "# ${1:Test Name}",
+            "",
+            "navigate to \"${2:https://}\"",
+            "wait 1 seconds",
+            "",
+            "# Verify initial state",
+            "verify title contains \"${3:title}\"",
+            "",
+            "# Actions",
+            "${4:click the button \"Submit\"}",
+            "",
+            "# Assertions",
+            "${5:verify the heading \"Success\" is visible}",
+            "",
+            "take screenshot as \"${6:result}.png\"",
+            "log \"${1} PASSED\"",
+            "$0"
+        ],
+        "description": "Full test script template"
+    }
+}

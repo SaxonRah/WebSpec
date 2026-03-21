@@ -1,0 +1,67 @@
+{
+    "name": "webspec-dsl",
+    "displayName": "WebSpec DSL",
+    "description": "Syntax highlighting, snippets, and language support for the WebSpec browser testing DSL",
+    "version": "1.0.0",
+    "publisher": "webspec",
+    "engines": {
+        "vscode": "^1.75.0"
+    },
+    "categories": [
+        "Programming Languages",
+        "Snippets",
+        "Testing"
+    ],
+    "keywords": [
+        "webspec",
+        "testing",
+        "selenium",
+        "browser",
+        "dsl",
+        "automation"
+    ],
+    "contributes": {
+        "languages": [
+            {
+                "id": "webspec",
+                "aliases": [
+                    "WebSpec",
+                    "webspec"
+                ],
+                "extensions": [
+                    ".ws"
+                ],
+                "configuration": "./language-configuration.json",
+                "icon": {
+                    "light": "./icons/ws-light.png",
+                    "dark": "./icons/ws-dark.png"
+                }
+            }
+        ],
+        "grammars": [
+            {
+                "language": "webspec",
+                "scopeName": "source.webspec",
+                "path": "./syntaxes/webspec.tmLanguage.json"
+            }
+        ],
+        "snippets": [
+            {
+                "language": "webspec",
+                "path": "./snippets/webspec.json"
+            }
+        ],
+        "themes": [
+          {
+              "label": "WebSpec Dark",
+              "uiTheme": "vs-dark",
+              "path": "./themes/webspec-color-theme.json"
+          },
+          {
+              "label": "WebSpec Light",
+              "uiTheme": "vs",
+              "path": "./themes/webspec-color-theme-light.json"
+          }
+      ]
+    }
+}
