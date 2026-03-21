@@ -15,6 +15,7 @@ verify the heading "Dashboard" is visible
 WebSpec figures out the CSS selectors, XPath, and element resolution
 automatically using a smart resolver powered by BeautifulSoup.
 
+See [`OperatorsManual.md`] for a full guide on WebSpec.
 ---
 
 ## Quick Start

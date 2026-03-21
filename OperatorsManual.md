@@ -34,7 +34,7 @@
     Appendix B ... Troubleshooting
 
 
--━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 
 ## Chapter 1: Setting Up
@@ -95,7 +95,7 @@ You should see:
     ✓ PASSED - 4 steps, 0 errors
 
 
--━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 
 ## Chapter 2: Your First Script
@@ -123,7 +123,7 @@ with `#`. Blank lines are ignored.
     take screenshot as "login_done.png"
     log "Login test passed!"
 
-Let's break down what's happening:
+Should be self-explanatory but, let's break down what's happening:
 
   1. `navigate to` opens a URL in the browser.
 
@@ -153,7 +153,7 @@ Let's break down what's happening:
     python webspec_cli.py my_first_test.ws --browser chrome --headless
 
 
--━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 
 ## Chapter 3: Finding Elements (The Smart Resolver)
@@ -315,7 +315,7 @@ checks visible text, aria-label, title, placeholder, value,
 and alt attributes in that order.
 
 
--━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 
 ## Chapter 4: Actions
@@ -415,7 +415,7 @@ Modifiers: ctrl, shift, alt, meta, command.
 Use this for anything the DSL doesn't cover natively.
 
 
--━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 
 ## Chapter 5: Assertions & Verification
@@ -493,7 +493,7 @@ All assertion values support variable interpolation:
     verify title contains $expected
 
 
--━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 
 ## Chapter 6: Waits & Timing
@@ -557,7 +557,7 @@ You generally don't need waits when:
      to become clickable; auto-retry handles this.
 
 
--━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 
 ## Chapter 7: Variables & Expressions
@@ -616,7 +616,7 @@ Inside a `try/catch` block:
     $_error         The error message from the failed block
 
 
--━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 
 ## Chapter 8: Control Flow
@@ -715,7 +715,7 @@ The `$_error` variable contains the error message from whatever
 failed in the `try` block.
 
 
--━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 
 ## Chapter 9: Subroutines & Imports
@@ -775,7 +775,7 @@ so any `define` statements register subroutines, and any
 bare statements run in sequence.
 
 
--━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 
 ## Chapter 10: Data-Driven Testing
@@ -841,7 +841,7 @@ to the next row. This means a single bad data row doesn't kill
 the entire test run.
 
 
--━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 
 ## Chapter 11: The Recorder
@@ -853,19 +853,19 @@ a new test.
 ### How It Works
 
     ┌─────────────┐    JS events    ┌─────────────┐
-    │   Browser   │ ──────────────> │  Collector   │
-    │  (you click │                 │  (Python     │
-    │   and type) │                 │   polls)     │
+    │   Browser   │ ──────────────> │  Collector  │
+    │  (you click │                 │  (Python    │
+    │   and type) │                 │   polls)    │
     └─────────────┘                 └──────┬──────┘
                                            │
                                     ┌──────▼──────┐
-                                    │ Transpiler   │
-                                    │ (events to   │
-                                    │  WebSpec)    │
+                                    │ Transpiler  │
+                                    │ (events to  │
+                                    │  WebSpec)   │
                                     └──────┬──────┘
                                            │
                                     ┌──────▼──────┐
-                                    │  output.ws   │
+                                    │  output.ws  │
                                     └─────────────┘
 
 A JavaScript capture layer is injected into the page. It records
@@ -952,7 +952,7 @@ skipped in favor of semantic classes (like `product-card`).
      capturing, use `:inject` to re-inject the capture script.
 
 
--━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 
 ## Chapter 12: The Interactive REPL
@@ -1023,7 +1023,7 @@ You can also use backslash for line continuation:
       ✓ OK (7 total steps)
 
 
--━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 
 ## Chapter 13: Reports & CI Integration
@@ -1090,7 +1090,7 @@ Inside the script, these are available as `$username` and
 `$password`.
 
 
--━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 
 ## Chapter 14: CLI Reference
@@ -1130,7 +1130,7 @@ Inside the script, these are available as `$username` and
     --poll-interval <sec>   0.5         Event polling frequency
 
 
--━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 
 ## Chapter 15: Grammar Reference
@@ -1292,7 +1292,7 @@ The grammar compiles to an LALR(1) parser with 182 rules and
     import_stmt     → IMPORT STRING
 
 
--━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 
 ## Appendix A: Selector Strategy Guide
