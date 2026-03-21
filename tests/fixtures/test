@@ -1,0 +1,96 @@
+# Install deps
+pip install ply beautifulsoup4 selenium pytest
+
+# Unit tests (no browser needed)
+pytest tests/test_lexer.py tests/test_parser.py tests/test_resolver.py tests/test_runtime.py -v
+
+# Integration tests (needs Chrome)
+pytest tests/test_integration.py -v
+
+# All together
+pytest tests/ -v
+
+
+
+# Run a specific file
+pytest tests/test_lexer.py -v
+
+# Run a specific class
+pytest tests/test_parser.py::TestElementRefs -v
+
+# Run with short traceback
+pytest tests/ -v --tb=short
+
+
+---
+
+
+python webspec_cli.py .\tests\fixtures\iframe_and_alerts.ws --browser chrome
+python webspec_cli.py .\tests\fixtures\login_test.ws --browser chrome
+python webspec_cli.py .\tests\fixtures\search_and_filter.ws --browser chrome
+
+python webspec_cli.py .\tests\fixtures\test_data_table.ws --browser chrome
+python webspec_cli.py .\tests\fixtures\test_counter.ws --browser chrome
+python webspec_cli.py .\tests\fixtures\test_login.ws --browser chrome
+python webspec_cli.py .\tests\fixtures\test_search.ws --browser chrome
+python webspec_cli.py .\tests\fixtures\test_table.ws --browser chrome
+python webspec_cli.py .\tests\fixtures\test_full_flow.ws --browser chrome
+
+python webspec_cli.py tests\fixtures\test_login.ws --base-url "file:///E:/WebSpec/tests/fixtures/test_site.html"
+
+python webspec_cli.py tests\fixtures\test_counter.ws --browser chrome --headless
+
+---
+
+python webspec_recorder.py --url "https://weathershopper.pythonanywhere.com/" --output recorded_shopping.ws
+
+# ── Interactive mode ─────────────────────────────────────
+python webspec_recorder.py --url "https://weathershopper.pythonanywhere.com/"
+# recorder> :start
+# → Click around in the browser...
+# recorder> :preview
+# → See generated WebSpec live
+# recorder> :save my_test.ws
+# recorder> :quit
+
+python webspec_cli.py recorded_shopping.ws --browser chrome --report
+
+---
+
+# Via pytest
+pytest tests/test_mega.py -v -s
+
+# Via CLI
+python webspec_cli.py tests\fixtures\mega_test.ws --browser chrome --report --base-url "file:///E:/WebSpec/tests/fixtures/mega_test.html" --var "BASE_URL_SECONDARY=file:///E:/WebSpec/tests/fixtures/test_site.html"
+
+# Headless
+python webspec_cli.py tests\fixtures\mega_test.ws --browser chrome --headless --report --base-url "file:///E:/WebSpec/tests/fixtures/mega_test.html"
+
+---------------
+---------------
+---------------
+---------------
+---------------
+
+# Run everything — unit tests + .ws scripts
+pytest tests/ -v
+
+# Run only .ws scripts
+pytest tests/fixtures/ tests/weather_shopper/ -v
+
+# Run only unit tests (skip .ws)
+pytest tests/ -v --ignore=tests/fixtures --ignore=tests/weather_shopper
+
+# Run a single .ws file
+pytest tests/fixtures/test_counter.ws -v
+
+# Run only weather shopper scripts
+pytest tests/weather_shopper/ -v
+
+# Run only fixtures
+pytest tests/fixtures/ -v
+
+# Keyword filter
+pytest tests/ -v -k "mega"
+pytest tests/ -v -k "weather"
+pytest tests/ -v -k "login"

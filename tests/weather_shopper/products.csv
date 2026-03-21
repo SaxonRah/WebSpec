@@ -1,0 +1,3 @@
+page_url,page_title,expected_count
+https://weathershopper.pythonanywhere.com/moisturizer,Moisturizers,6
+https://weathershopper.pythonanywhere.com/sunscreen,Sunscreens,6

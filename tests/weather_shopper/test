@@ -1,0 +1,30 @@
+# Run each individually
+python webspec_cli.py tests\weather_shopper\01_home.ws --browser chrome
+python webspec_cli.py tests\weather_shopper\02_products.ws --browser chrome
+python webspec_cli.py tests\weather_shopper\03_cart_flow.ws --browser chrome
+python webspec_cli.py tests\weather_shopper\04_smart_buy.ws --browser chrome
+python webspec_cli.py tests\weather_shopper\05_stress.ws --browser chrome
+
+# Or headless for CI
+python webspec_cli.py tests\weather_shopper\01_home.ws --browser chrome --headless
+
+---
+
+# Run tests
+pytest tests/ -v
+
+# CLI with report
+python webspec_cli.py tests\weather_shopper\01_home.ws --browser chrome --report
+
+# Data-driven
+python webspec_cli.py tests\weather_shopper\06_data_driven.ws --browser chrome --report
+
+# Interactive REPL
+python webspec_repl.py --browser chrome --url "https://weathershopper.pythonanywhere.com/"
+# Then type commands interactively:
+#   webspec> verify title is "Current Temperature"
+#   webspec> click the link "Buy moisturizers"
+#   webspec> set $count to count of the button "Add"
+#   webspec> :vars
+#   webspec> :screenshot
+#   webspec> :quit
