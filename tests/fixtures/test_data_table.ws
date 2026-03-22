@@ -1,4 +1,4 @@
-# Data table with variable comparison — tests the $var is "string" fix
+# Data table with variable comparison - tests the $var is "string" fix
 
 navigate to "BASE_URL"
 

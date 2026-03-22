@@ -1,5 +1,5 @@
 """
-WebSpec DSL — PLY Lexer
+WebSpec DSL - PLY Lexer
 Tokenizes English-like test scripts into a stream for the parser.
 """
 
@@ -115,11 +115,11 @@ def t_IDENT(t):
     r'[a-zA-Z_][a-zA-Z0-9_]*'
     t.type = reserved.get(t.value.lower(), 'STRING')
     if t.type == 'STRING':
-        # bare word not in reserved — treat as unquoted string
+        # bare word not in reserved - treat as unquoted string
         pass
     return t
 
-# ── Newlines (significant — statement separators) ───────
+# ── Newlines (significant - statement separators) ───────
 def t_NEWLINE(t):
     r'\n+'
     t.lexer.lineno += len(t.value)
@@ -130,7 +130,7 @@ def t_COMMENT(t):
     r'\#[^\n]*'
     pass  # discard
 
-# ── Whitespace (spaces/tabs — not newlines) ─────────────
+# ── Whitespace (spaces/tabs - not newlines) ─────────────
 t_ignore = ' \t\r'
 
 def t_error(t):

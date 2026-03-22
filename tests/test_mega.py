@@ -1,5 +1,5 @@
 """
-Mega test integration — runs the monolithic mega_test.ws
+Mega test integration - runs the monolithic mega_test.ws
 against mega_test.html with a URL transition to test_site.html.
 """
 

@@ -1,5 +1,5 @@
 """
-WebSpec DSL — Browser Recorder
+WebSpec DSL - Browser Recorder
 Records user interactions and generates WebSpec scripts.
 
 Usage:

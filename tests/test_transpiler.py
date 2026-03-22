@@ -48,7 +48,7 @@ class TestHelpers:
 
 
 # ═══════════════════════════════════════════════════════════
-#  Transpiler — selector strategy
+#  Transpiler - selector strategy
 # ═══════════════════════════════════════════════════════════
 
 class TestSelectorStrategy:
@@ -202,7 +202,7 @@ class TestSelectorStrategy:
 
 
 # ═══════════════════════════════════════════════════════════
-#  Transpiler — full event sequences
+#  Transpiler - full event sequences
 # ═══════════════════════════════════════════════════════════
 
 class TestFullTranspilation:

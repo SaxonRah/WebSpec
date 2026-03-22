@@ -1,5 +1,5 @@
 """
-WebSpec DSL — Runtime Engine
+WebSpec DSL - Runtime Engine
 Walks the AST and executes each node against a live Selenium session.
 """
 
@@ -75,7 +75,7 @@ class WebSpecRuntime:
         try:
             self.exec_block(program.statements)
         except AssertionError:
-            # Already recorded by _assert — just re-raise, don't double-log
+            # Already recorded by _assert - just re-raise, don't double-log
             raise
         except Exception as e:
             self.errors.append(f"FATAL: {e}")
@@ -259,7 +259,7 @@ class WebSpecRuntime:
                 return
 
         raise RuntimeError(
-            f"Could not select '{n.option}' — available options: "
+            f"Could not select '{n.option}' - available options: "
             f"{[o.text for o in sel.options]}"
         )
 

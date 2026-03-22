@@ -1,5 +1,5 @@
 # ══════════════════════════════════════════════════════════
-# 01_home.ws — Home page: navigation, variables, assertions
+# 01_home.ws - Home page: navigation, variables, assertions
 # Stresses: LEXER (all token types), PARSER (nav + verify
 # + set + log), RUNTIME (navigate, assert, extract)
 # ══════════════════════════════════════════════════════════

@@ -1,4 +1,4 @@
-# Search & filter — tests dynamic visibility, counting, extraction
+# Search & filter - tests dynamic visibility, counting, extraction
 
 navigate to "BASE_URL"
 

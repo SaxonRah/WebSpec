@@ -1,5 +1,5 @@
 # ══════════════════════════════════════════════════════════
-# 02_products.ws — Product pages: element resolution
+# 02_products.ws - Product pages: element resolution
 # Stresses: RESOLVER (fuzzy text, containing, ordinals,
 # for-each, counting), PARSER (for-each, set, verify count)
 # ══════════════════════════════════════════════════════════

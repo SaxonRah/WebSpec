@@ -1,5 +1,5 @@
 """
-WebSpec DSL — Smart Element Resolver
+WebSpec DSL - Smart Element Resolver
 Uses BeautifulSoup to parse the live DOM and find elements matching
 English-like selector chains, then returns Selenium-compatible locators.
 
@@ -39,7 +39,7 @@ ELEMENT_TYPE_TAGS = {
     'dialog':   ['dialog', '[role=dialog]', '[role=alertdialog]'],
     'menu':     ['nav', 'ul[role=menu]', '[role=menubar]', 'menu'],
     'item':     ['li', '[role=menuitem]', '[role=option]'],
-    'element':  ['*'],                    # wildcard — matches anything
+    'element':  ['*'],                    # wildcard - matches anything
 }
 
 
@@ -263,7 +263,7 @@ class SmartResolver:
     def _filter_fuzzy_text(candidates, query):
         """
         Match by: exact text, aria-label, title, placeholder,
-        value, alt — then fall back to fuzzy ratio.
+        value, alt - then fall back to fuzzy ratio.
         """
         query_lower = query.lower().strip()
         exact, partial, fuzzy = [], [], []
@@ -299,12 +299,12 @@ class SmartResolver:
         fuzzy.sort(key=lambda x: -x[0])
         return [c for _, c in fuzzy]
 
-    # ── "near" — find elements close to a label ──────────
+    # ── "near" - find elements close to a label ──────────
     def _filter_near_label(self, candidates, label_text):
         """
         Find a label / text node matching label_text, then return
         candidates that are siblings, adjacent, or share a parent
-        with that label — simulating spatial proximity.
+        with that label - simulating spatial proximity.
 
         Resolution order (most reliable first):
           1. <label for="..."> with matching text → target by id
@@ -365,7 +365,7 @@ class SmartResolver:
                 if matches:
                     return matches
 
-        return candidates  # can't narrow — return all
+        return candidates  # can't narrow - return all
 
     @staticmethod
     def _get_nearby_tags(element):

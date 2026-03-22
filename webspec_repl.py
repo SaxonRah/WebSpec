@@ -1,5 +1,5 @@
 """
-WebSpec DSL — Interactive REPL
+WebSpec DSL - Interactive REPL
 Type WebSpec commands one at a time against a live browser.
 """
 

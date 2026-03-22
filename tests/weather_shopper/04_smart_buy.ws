@@ -1,5 +1,5 @@
 # ══════════════════════════════════════════════════════════
-# 04_smart_buy.ws — Temperature-driven shopping decision
+# 04_smart_buy.ws - Temperature-driven shopping decision
 # Stresses: PARSER (if/else, variable conditions),
 # RUNTIME (conditional execution, multi-path flow),
 # LEXER (string concat, variable interpolation)

@@ -1,4 +1,4 @@
-# Table iteration — tests for-each, inside, try-catch, dynamic state
+# Table iteration - tests for-each, inside, try-catch, dynamic state
 
 navigate to "BASE_URL"
 

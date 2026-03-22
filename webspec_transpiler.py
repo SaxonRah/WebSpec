@@ -1,16 +1,16 @@
 """
-WebSpec DSL — Smart Transpiler
+WebSpec DSL - Smart Transpiler
 Converts captured browser events into idiomatic WebSpec script.
 
 Selector priority (most readable first):
-  1. near "Label"        — when a label[for] or nearby label exists
-  2. "Visible text"      — button/link with clear text
-  3. with placeholder    — input with placeholder text
-  4. containing "text"   — partial text match
-  5. with id "x"         — when id is readable (not auto-generated)
-  6. with class "x"      — when class is semantic
-  7. with attr "x" is "y" — data attributes, name, etc.
-  8. element "css"       — raw fallback (last resort)
+  1. near "Label"        - when a label[for] or nearby label exists
+  2. "Visible text"      - button/link with clear text
+  3. with placeholder    - input with placeholder text
+  4. containing "text"   - partial text match
+  5. with id "x"         - when id is readable (not auto-generated)
+  6. with class "x"      - when class is semantic
+  7. with attr "x" is "y" - data attributes, name, etc.
+  8. element "css"       - raw fallback (last resort)
 """
 
 import re

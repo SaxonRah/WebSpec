@@ -1,7 +1,7 @@
 ```
 # ══════════════════════════════════════════════════════════
-# WebSpec DSL — Complete Grammar (v1.0 final)
-# 182 production rules · 383 LALR states · 0 reduce/reduce
+# WebSpec DSL - Complete Grammar (v1.0 final)
+# 182 production rules - 383 LALR states - 0 reduce/reduce
 # ══════════════════════════════════════════════════════════
 
 ── Program ─────────────────────────────────────────────────

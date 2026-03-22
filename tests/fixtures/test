@@ -72,7 +72,7 @@ python webspec_cli.py tests\fixtures\mega_test.ws --browser chrome --headless --
 ---------------
 ---------------
 
-# Run everything — unit tests + .ws scripts
+# Run everything - unit tests + .ws scripts
 pytest tests/ -v
 
 # Run only .ws scripts

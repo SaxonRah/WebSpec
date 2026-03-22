@@ -1,4 +1,4 @@
-# Counter — tests repeat, variables, conditional logic
+# Counter - tests repeat, variables, conditional logic
 
 navigate to "BASE_URL"
 

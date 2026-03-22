@@ -1,10 +1,10 @@
 """
-WebSpec DSL — PLY Parser
+WebSpec DSL - PLY Parser
 LALR(1) grammar rules that build the AST from the token stream.
 """
 
 import ply.yacc as yacc
-from webspec_lexer import tokens  # noqa — PLY needs this import
+from webspec_lexer import tokens  # noqa - PLY needs this import
 from webspec_ast import *
 
 # ── Precedence (lowest to highest) ───────────────────────
@@ -127,7 +127,7 @@ def p_text_value_string(p):
 
 def p_text_value_variable(p):
     '''text_value : VARIABLE'''
-    p[0] = f'${{{p[1]}}}'  # e.g. ${title} — resolved at runtime
+    p[0] = f'${{{p[1]}}}'  # e.g. ${title} - resolved at runtime
 
 def p_selector_chain(p):
     '''selector_chain : selector

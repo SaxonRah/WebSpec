@@ -1,5 +1,5 @@
 # ══════════════════════════════════════════════════════════
-# 03_cart_flow.ws — Add to cart and verify cart page
+# 03_cart_flow.ws - Add to cart and verify cart page
 # Stresses: PARSER (define/call), RUNTIME (subroutines,
 # multi-page nav), RESOLVER (inside, button matching)
 # ══════════════════════════════════════════════════════════

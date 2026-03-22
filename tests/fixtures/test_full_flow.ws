@@ -1,4 +1,4 @@
-# Full flow — define/call subroutines, form validation, multi-step
+# Full flow - define/call subroutines, form validation, multi-step
 
 navigate to "BASE_URL"
 

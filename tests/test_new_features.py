@@ -3,7 +3,7 @@ Tests for the five new features:
   1. Auto-retry smart waits
   2. Import system
   3. Data-driven testing
-  4. REPL (smoke test only — interactive)
+  4. REPL (smoke test only - interactive)
   5. HTML report generation
 """
 

@@ -1,5 +1,5 @@
 # ══════════════════════════════════════════════════════════
-# 05_stress.ws — Edge cases and error handling
+# 05_stress.ws - Edge cases and error handling
 # Stresses: PARSER (try/catch, repeat, execute),
 # RESOLVER (raw xpath, matching regex, with class),
 # RUNTIME (JS execution, scrolling, error recovery)

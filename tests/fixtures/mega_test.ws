@@ -1,5 +1,5 @@
 # ═══════════════════════════════════════════════════════════
-# WEBSPEC MEGA TEST — exercises every grammar rule, resolver
+# WEBSPEC MEGA TEST - exercises every grammar rule, resolver
 # strategy, and runtime handler in a single script.
 #
 # Tests: 182 grammar rules, 18 element types, 15 selector
@@ -221,7 +221,7 @@ log "PHASE 4 PASSED: Product cards & cart"
 # progress bar, dynamic content, contenteditable
 # ─────────────────────────────────────────────────────────
 
-# Tabs — use explicit tab button clicks
+# Tabs - use explicit tab button clicks
 click element "button.tab-btn:nth-child(2)"
 wait 1 seconds
 verify the element with id "tab-details" is visible
@@ -233,7 +233,7 @@ click element "button.tab-btn:nth-child(1)"
 wait 1 seconds
 verify the element with id "tab-overview" is visible
 
-# Counter — JS reset for guaranteed clean state
+# Counter - JS reset for guaranteed clean state
 execute "counter = 0; document.getElementById('counter-value').textContent = '0';"
 verify the element with id "counter-value" has text "0"
 
@@ -253,7 +253,7 @@ verify the element with id "counter-value" has text "0"
 set $counter_val to text of the element with id "counter-value"
 log "Counter after reset: " + $counter_val
 
-# Accordion — use JS to toggle for reliability
+# Accordion - use JS to toggle for reliability
 execute "document.querySelectorAll('.accordion-body').forEach(function(b){b.classList.remove('open')});"
 execute "document.getElementById('accordion-a').classList.add('open');"
 wait 1 seconds
@@ -265,7 +265,7 @@ wait 1 seconds
 verify the element with id "accordion-b" is visible
 verify the element with id "accordion-a" is hidden
 
-# Progress bar — use explicit button IDs via JS
+# Progress bar - use explicit button IDs via JS
 execute "document.getElementById('progress-fill').style.width='50%'; document.getElementById('progress-text').textContent='50%';"
 wait 1 seconds
 verify the element with id "progress-text" has text "50%"

@@ -1,5 +1,5 @@
 """
-WebSpec DSL — AST Nodes
+WebSpec DSL - AST Nodes
 Every grammar rule produces one of these typed nodes.
 """
 

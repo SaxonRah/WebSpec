@@ -1,5 +1,5 @@
 """
-WebSpec DSL — CLI Entry Point
+WebSpec DSL - CLI Entry Point
 Usage: python webspec_cli.py test_script.ws [--browser chrome|firefox]
 """
 
@@ -93,7 +93,7 @@ def main():
                 runtime.variables[name] = value
 
         runtime.run(ast)
-        print(f"\n✓ PASSED — {runtime.step_count} steps, 0 errors")
+        print(f"\n✓ PASSED - {runtime.step_count} steps, 0 errors")
 
         if args.report:
             from webspec_report import generate_report
@@ -106,7 +106,7 @@ def main():
 
         sys.exit(0)
     except (AssertionError, TimeoutError) as e:
-        print(f"\n✗ FAILED — {e}")
+        print(f"\n✗ FAILED - {e}")
 
         if args.report:
             from webspec_report import generate_report
@@ -119,7 +119,7 @@ def main():
 
         sys.exit(1)
     except SyntaxError as e:
-        print(f"\n✗ PARSE ERROR — {e}")
+        print(f"\n✗ PARSE ERROR - {e}")
         sys.exit(2)
     finally:
         driver.quit()

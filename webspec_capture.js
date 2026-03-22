@@ -1,4 +1,4 @@
-// webspec_capture.js — Injected into the browser page by the recorder.
+// webspec_capture.js - Injected into the browser page by the recorder.
 // Captures user interactions with full element context for WebSpec transpilation.
 
 (function() {

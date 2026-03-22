@@ -1,4 +1,4 @@
-# Login flow — tests forms, validation, selectors, assertions
+# Login flow - tests forms, validation, selectors, assertions
 
 navigate to "BASE_URL"
 

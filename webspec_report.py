@@ -1,5 +1,5 @@
 """
-WebSpec DSL — HTML Test Report Generator
+WebSpec DSL - HTML Test Report Generator
 Produces a self-contained HTML report with pass/fail status,
 timing, screenshots, and variable dumps.
 """

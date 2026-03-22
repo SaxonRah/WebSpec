@@ -1,5 +1,5 @@
 """
-Integration tests — runs .ws scripts against the local HTML fixture
+Integration tests - runs .ws scripts against the local HTML fixture
 with a real (headless) Chrome browser.
 
 Requires: Chrome + chromedriver installed.
