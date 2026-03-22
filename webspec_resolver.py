@@ -16,8 +16,7 @@ from typing import Optional
 from bs4 import BeautifulSoup, Tag
 from selenium.webdriver.common.by import By
 
-from webspec_ast import ElementRef, RawElementRef, VarElementRef, Selector
-
+from webspec_ast import ElementRef, RawElementRef, VarElementRef, Selector, VarRef, NumberLiteral, StringLiteral
 
 # ── Tag mapping: DSL element type → HTML tags ────────────
 ELEMENT_TYPE_TAGS = {
@@ -199,6 +198,17 @@ class SmartResolver:
                 break
         return candidates
 
+    def _stringify_runtime_value(self, value):
+        if isinstance(value, StringLiteral):
+            return value.value
+        if isinstance(value, NumberLiteral):
+            return str(value.value)
+        if isinstance(value, VarRef):
+            raise RuntimeError("VarRef reached SmartResolver before runtime evaluation")
+        if value is None:
+            return ""
+        return str(value)
+
     def _apply_one(self, candidates, sel: Selector, variables):
         kind = sel.kind
 
@@ -225,19 +235,31 @@ class SmartResolver:
             return [c for c in candidates
                     if c.get(extra) == value]
 
+        # elif kind == 'placeholder':
+        #     return [c for c in candidates
+        #             if c.get('placeholder', '').lower()
+        #             == value.lower()]
         elif kind == 'placeholder':
-            return [c for c in candidates
-                    if c.get('placeholder', '').lower()
-                    == value.lower()]
+            v = self._stringify_runtime_value(value).lower()
+            return [
+                c for c in candidates
+                if c.get('placeholder', '').lower() == v
+            ]
 
         elif kind == 'value':
             return [c for c in candidates
                     if c.get('value', '') == value]
 
+        # elif kind == 'containing':
+        #     v = value.lower()
+        #     return [c for c in candidates
+        #             if v in c.get_text(strip=True).lower()]
         elif kind == 'containing':
-            v = value.lower()
-            return [c for c in candidates
-                    if v in c.get_text(strip=True).lower()]
+            v = self._stringify_runtime_value(value).lower()
+            return [
+                c for c in candidates
+                if v in c.get_text(strip=True).lower()
+            ]
 
         elif kind == 'matching':
             pattern = re.compile(value)

@@ -169,7 +169,22 @@ class WebSpecRuntime:
     def _resolve_all(self, ref):
         return self.resolver.resolve_all(ref, self.variables)
 
-    def _eval_expr(self, expr) -> str:
+    # def _eval_expr(self, expr):
+    #     if isinstance(expr, StringLiteral):
+    #         return expr.value
+    #     if isinstance(expr, NumberLiteral):
+    #         return expr.value
+    #     if isinstance(expr, VarRef):
+    #         v = self.variables.get(expr.name)
+    #         if v is None:
+    #             raise RuntimeError(f"Variable ${expr.name} not set")
+    #         return v
+    #     if isinstance(expr, Concat):
+    #         return str(self._eval_expr(expr.left)) + str(self._eval_expr(expr.right))
+    #     raise RuntimeError(f"Cannot evaluate expression: {expr}")
+    # This stores raw numbers in variables
+
+    def _eval_expr(self, expr):
         if isinstance(expr, StringLiteral):
             return expr.value
         if isinstance(expr, NumberLiteral):
@@ -507,26 +522,37 @@ class WebSpecRuntime:
 
     def _exec_WaitForElement(self, n: WaitForElement):
         timeout = n.timeout or self.timeout
-        # Use a polling approach that works with smart resolution
         deadline = time.time() + timeout
+
         while time.time() < deadline:
             try:
                 el = self._resolve(n.target)
-                if n.state:
-                    checks = {
-                        'visible': el.is_displayed,
-                        'enabled': el.is_enabled,
-                        'selected': el.is_selected,
-                    }
-                    if checks.get(n.state, lambda: True)():
-                        return
-                else:
-                    return  # element exists
+                if not n.state:
+                    return
+
+                checks = {
+                    'visible': el.is_displayed,
+                    'hidden': lambda: not el.is_displayed(),
+                    'enabled': el.is_enabled,
+                    'disabled': lambda: not el.is_enabled(),
+                    'selected': el.is_selected,
+                    'checked': el.is_selected,
+                    'focused': lambda: el == self.driver.switch_to.active_element,
+                    'empty': lambda: (el.get_attribute('value') or '') == '',
+                }
+
+                check = checks.get(n.state)
+                if check is None:
+                    raise RuntimeError(f"Unsupported wait state: {n.state}")
+
+                if check():
+                    return
             except Exception:
                 pass
+
             time.sleep(0.25)
-        raise TimeoutError(
-            f"Timed out waiting for element after {timeout}s")
+
+        raise TimeoutError(f"Timed out waiting for element after {timeout}s")
 
     def _exec_WaitUntilURL(self, n: WaitUntilURL):
         expected = self._eval_runtime_value(n.expected)
@@ -627,21 +653,42 @@ class WebSpecRuntime:
             except Exception:
                 return cond.state == 'hidden'
 
+        # elif isinstance(cond, CompareCondition):
+        #     l = self._eval_expr(cond.left)
+        #     r = self._eval_expr(cond.right)
+        #     op = cond.op
+        #
+        #     if op in ("is", "equals"):
+        #         return str(l) == str(r)
+        #     elif op == "greater_than":
+        #         try:
+        #             return float(l) > float(r)
+        #         except (ValueError, TypeError):
+        #             return str(l) > str(r)
+        #     elif op == "less_than":
+        #         try:
+        #             return float(l) < float(r)
+        #         except (ValueError, TypeError):
+        #             return str(l) < str(r)
+        #     return False
+        # This stores raw numbers in variables
+        
         elif isinstance(cond, CompareCondition):
             l = self._eval_expr(cond.left)
             r = self._eval_expr(cond.right)
             op = cond.op
-            if op in ('is', 'equals'):
+
+            if op in ("is", "equals"):
                 return l == r
-            elif op == 'greater_than':
+            elif op == "greater_than":
                 try:
                     return float(l) > float(r)
-                except ValueError:
+                except (ValueError, TypeError):
                     return l > r
-            elif op == 'less_than':
+            elif op == "less_than":
                 try:
                     return float(l) < float(r)
-                except ValueError:
+                except (ValueError, TypeError):
                     return l < r
             return False
 
