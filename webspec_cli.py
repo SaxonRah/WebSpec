@@ -105,9 +105,24 @@ def main():
             print(f"  Report: {path}")
 
         sys.exit(0)
-    except (AssertionError, TimeoutError) as e:
+    # except (AssertionError, TimeoutError, RuntimeError) as e:
+    #     print(f"\n✗ FAILED - {e}")
+    #
+    #     if args.report:
+    #         from webspec_report import generate_report
+    #         path = generate_report(
+    #             runtime,
+    #             script_name=script_path.name,
+    #             output_path=args.report_path,
+    #         )
+    #         print(f"  Report: {path}")
+    #
+    #     sys.exit(1)
+    # except SyntaxError as e:
+    #     print(f"\n✗ PARSE ERROR - {e}")
+    #     sys.exit(2)
+    except (AssertionError, TimeoutError, RuntimeError) as e:
         print(f"\n✗ FAILED - {e}")
-
         if args.report:
             from webspec_report import generate_report
             path = generate_report(
@@ -115,12 +130,24 @@ def main():
                 script_name=script_path.name,
                 output_path=args.report_path,
             )
-            print(f"  Report: {path}")
-
+            print(f" Report: {path}")
         sys.exit(1)
+
     except SyntaxError as e:
         print(f"\n✗ PARSE ERROR - {e}")
         sys.exit(2)
+
+    except Exception as e:
+        print(f"\n✗ UNEXPECTED ERROR - {e}")
+        if args.report:
+            from webspec_report import generate_report
+            path = generate_report(
+                runtime,
+                script_name=script_path.name,
+                output_path=args.report_path,
+            )
+            print(f" Report: {path}")
+        sys.exit(3)
     finally:
         driver.quit()
 

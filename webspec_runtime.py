@@ -122,6 +122,12 @@ class WebSpecRuntime:
 
         return re.sub(r'\$\{(\w+)}', _replace, value)
 
+    @staticmethod
+    def _coerce_to_string(value):
+        if value is None:
+            return ""
+        return str(value)
+
     # ══════════════════════════════════════════════════════
     #  Statement dispatch
     # ══════════════════════════════════════════════════════
@@ -169,33 +175,27 @@ class WebSpecRuntime:
     def _resolve_all(self, ref):
         return self.resolver.resolve_all(ref, self.variables)
 
-    # def _eval_expr(self, expr):
-    #     if isinstance(expr, StringLiteral):
-    #         return expr.value
-    #     if isinstance(expr, NumberLiteral):
-    #         return expr.value
-    #     if isinstance(expr, VarRef):
-    #         v = self.variables.get(expr.name)
-    #         if v is None:
-    #             raise RuntimeError(f"Variable ${expr.name} not set")
-    #         return v
-    #     if isinstance(expr, Concat):
-    #         return str(self._eval_expr(expr.left)) + str(self._eval_expr(expr.right))
-    #     raise RuntimeError(f"Cannot evaluate expression: {expr}")
-    # This stores raw numbers in variables
-
     def _eval_expr(self, expr):
         if isinstance(expr, StringLiteral):
             return expr.value
         if isinstance(expr, NumberLiteral):
-            return str(expr.value)
+        # This stores raw numbers in variables
+            return expr.value
+        # This stores numbers as strings in variables
+        #     return str(expr.value)
         if isinstance(expr, VarRef):
             v = self.variables.get(expr.name)
             if v is None:
                 raise RuntimeError(f"Variable ${expr.name} not set")
-            return str(v)
+            return v
         if isinstance(expr, Concat):
-            return self._eval_expr(expr.left) + self._eval_expr(expr.right)
+        # This stores raw numbers in variables
+        #     return self._eval_expr(expr.left) + self._eval_expr(expr.right)
+            left = self._eval_expr(expr.left)
+            right = self._eval_expr(expr.right)
+            return self._coerce_to_string(left) + self._coerce_to_string(right)
+        # This stores numbers as strings in variables
+        #     return str(self._eval_expr(expr.left)) + str(self._eval_expr(expr.right))
         raise RuntimeError(f"Cannot evaluate expression: {expr}")
 
     def _current_script_dir(self) -> Path:
@@ -272,12 +272,16 @@ class WebSpecRuntime:
 
     def _exec_TypeText(self, n: TypeText):
         el = self._resolve(n.target)
+        # el.clear()
+        # el.send_keys(self._eval_expr(n.text))
+        text = self._coerce_to_string(self._eval_runtime_value(n.text))
         el.clear()
-        el.send_keys(self._eval_expr(n.text))
+        el.send_keys(text)
 
     def _exec_AppendText(self, n: AppendText):
         el = self._resolve(n.target)
-        el.send_keys(self._eval_expr(n.text))
+        # el.send_keys(self._eval_expr(n.text))
+        el.send_keys(self._coerce_to_string(self._eval_runtime_value(n.text)))
 
     def _exec_Clear(self, n: Clear):
         self._resolve(n.target).clear()
@@ -672,7 +676,7 @@ class WebSpecRuntime:
         #             return str(l) < str(r)
         #     return False
         # This stores raw numbers in variables
-        
+
         elif isinstance(cond, CompareCondition):
             l = self._eval_expr(cond.left)
             r = self._eval_expr(cond.right)
@@ -693,7 +697,14 @@ class WebSpecRuntime:
             return False
 
         elif isinstance(cond, URLCondition):
-            return cond.expected in self.driver.current_url
+            # return cond.expected in self.driver.current_url
+
+            # expected = self._eval_runtime_value(cond.expected)
+            # expected = "" if expected is None else str(expected)
+            # return expected in self.driver.current_url
+
+            expected = self._coerce_to_string(self._eval_runtime_value(cond.expected))
+            return expected in self.driver.current_url
 
         elif isinstance(cond, NotCondition):
             return not self._eval_condition(cond.child)
@@ -842,7 +853,8 @@ class WebSpecRuntime:
             self.variables = base_vars
 
     def _exec_Log(self, n: Log):
-        msg = self._eval_expr(n.message)
+        # msg = self._eval_expr(n.message)
+        msg = self._coerce_to_string(self._eval_expr(n.message))
         logger.info(f"[LOG] {msg}")
 
     def _exec_TakeScreenshot(self, n: TakeScreenshot):
@@ -866,11 +878,22 @@ class WebSpecRuntime:
             el = self._resolve(n.target)
             self.driver.switch_to.frame(el)
 
+    # def _exec_SwitchWindow(self, n: SwitchWindow):
+    #     for handle in self.driver.window_handles:
+    #         self.driver.switch_to.window(handle)
+    #         if n.name in self.driver.title:
+    #             return
     def _exec_SwitchWindow(self, n: SwitchWindow):
+        original_handle = self.driver.current_window_handle
+
         for handle in self.driver.window_handles:
             self.driver.switch_to.window(handle)
             if n.name in self.driver.title:
                 return
+
+        # Restore original focus before failing
+        self.driver.switch_to.window(original_handle)
+        raise RuntimeError(f'No window found with title containing "{n.name}"')
 
     def _exec_OpenWindow(self, _):
         self.driver.execute_script("window.open('')")

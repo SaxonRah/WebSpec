@@ -8,6 +8,7 @@ timing, screenshots, and variable dumps.
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
+from html import escape
 
 from webspec_runtime import WebSpecRuntime
 
@@ -37,7 +38,8 @@ def generate_report(
         status_icon = '&#10004;' if s['status'] == 'pass' else '&#10008;'
         error_html = ''
         if s['error']:
-            escaped = s['error'].replace('<', '&lt;').replace('>', '&gt;')
+            # escaped = s['error'].replace('<', '&lt;').replace('>', '&gt;')
+            escaped = escape(s['error'], quote=True)
             error_html = f'<div class="error-msg">{escaped}</div>'
 
         step_rows += f'''
@@ -53,7 +55,8 @@ def generate_report(
     # Build variables section
     var_rows = ''
     for k, v in runtime.variables.items():
-        val = str(v)[:200].replace('<', '&lt;').replace('>', '&gt;')
+        # val = str(v)[:200].replace('<', '&lt;').replace('>', '&gt;')
+        val = escape(str(v)[:200], quote=True)
         var_rows += f'<tr><td>${k}</td><td>{val}</td></tr>'
 
     # Find screenshots

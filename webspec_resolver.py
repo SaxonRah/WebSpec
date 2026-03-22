@@ -11,6 +11,7 @@ Strategy:
 """
 
 import re
+import time
 from difflib import SequenceMatcher
 from typing import Optional
 from bs4 import BeautifulSoup, Tag
@@ -113,22 +114,49 @@ class SmartResolver:
                     raise
                 time.sleep(self.retry_interval)
 
+    # def resolve_all(self, ref, variables=None):
+    #     """Return ALL matching elements as Selenium WebElements."""
+    #     variables = variables or {}
+    #     self._refresh_soup()
+    #     candidates = self._get_candidates(ref.elem_type)
+    #     candidates = self._apply_selectors(candidates, ref.selectors,
+    #                                         variables)
+    #     results = []
+    #     for tag in candidates:
+    #         xpath = self._tag_to_xpath(tag)
+    #         try:
+    #             results.append(
+    #                 self.driver.find_element(By.XPATH, xpath))
+    #         except Exception:
+    #             continue
+    #     return results
     def resolve_all(self, ref, variables=None):
         """Return ALL matching elements as Selenium WebElements."""
         variables = variables or {}
-        self._refresh_soup()
-        candidates = self._get_candidates(ref.elem_type)
-        candidates = self._apply_selectors(candidates, ref.selectors,
-                                            variables)
-        results = []
-        for tag in candidates:
-            xpath = self._tag_to_xpath(tag)
+        deadline = time.time() + self.retry_timeout
+        last_error = None
+
+        while True:
             try:
-                results.append(
-                    self.driver.find_element(By.XPATH, xpath))
-            except Exception:
-                continue
-        return results
+                self._refresh_soup()
+                candidates = self._get_candidates(ref.elem_type)
+                candidates = self._apply_selectors(candidates, ref.selectors, variables)
+
+                results = []
+                for tag in candidates:
+                    xpath = self._tag_to_xpath(tag)
+                    try:
+                        results.append(self.driver.find_element(By.XPATH, xpath))
+                    except Exception:
+                        continue
+
+                return results
+
+            except Exception as e:
+                last_error = e
+                if time.time() >= deadline:
+                    raise last_error
+                time.sleep(self.retry_interval)
 
     # ── Variable interpolation ───────────────────────────
     @staticmethod
@@ -246,9 +274,13 @@ class SmartResolver:
                 if c.get('placeholder', '').lower() == v
             ]
 
+        # elif kind == 'value':
+        #     return [c for c in candidates
+        #             if c.get('value', '') == value]
         elif kind == 'value':
+            v = self._stringify_runtime_value(value)
             return [c for c in candidates
-                    if c.get('value', '') == value]
+                    if c.get('value', '') == v]
 
         # elif kind == 'containing':
         #     v = value.lower()
@@ -261,13 +293,29 @@ class SmartResolver:
                 if v in c.get_text(strip=True).lower()
             ]
 
+        # elif kind == 'matching':
+        #     pattern = re.compile(value)
+        #     return [c for c in candidates
+        #             if pattern.search(c.get_text(strip=True))]
         elif kind == 'matching':
-            pattern = re.compile(value)
-            return [c for c in candidates
-                    if pattern.search(c.get_text(strip=True))]
+            pattern_text = self._stringify_runtime_value(value)
+            try:
+                pattern = re.compile(pattern_text)
+            except re.error as e:
+                raise RuntimeError(f"Invalid regex /{pattern_text}/: {e}") from e
 
+            return [
+                c for c in candidates
+                if pattern.search(c.get_text(strip=True))
+            ]
+
+        # elif kind == 'near':
+        #     return self._filter_near_label(candidates, value)
         elif kind == 'near':
-            return self._filter_near_label(candidates, value)
+            matches = self._filter_near_label(candidates, value)
+            if not matches:
+                raise RuntimeError(f'No elements found near label "{self._stringify_runtime_value(value)}"')
+            return matches
 
         elif kind == 'inside':
             parent_el = self._resolve_bs4(sel.child, variables)
@@ -335,7 +383,9 @@ class SmartResolver:
           4. Direct-text match on broader elements → DOM proximity
           5. aria-label on nearby containers → DOM proximity
         """
+        label_text = self._stringify_runtime_value(label_text)
         label_lower = label_text.lower().strip()
+        # label_lower = label_text.lower().strip()
 
         # ── Strategy 1: <label for="..."> (most reliable) ────
         for lb in self._soup.find_all('label'):
@@ -387,7 +437,8 @@ class SmartResolver:
                 if matches:
                     return matches
 
-        return candidates  # can't narrow - return all
+        # return candidates  # can't narrow - return all
+        return []
 
     @staticmethod
     def _get_nearby_tags(element):

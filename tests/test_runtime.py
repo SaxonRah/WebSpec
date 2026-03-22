@@ -264,7 +264,7 @@ class TestRuntimeVariables:
     def test_set_number(self, runtime):
         runtime._exec(SetVar(
             name='count', value=NumberLiteral(value=42)))
-        assert runtime.variables['count'] == '42'
+        assert runtime.variables['count'] == 42
 
     def test_set_text_of(self, runtime):
         runtime._mock_element.text = 'Dashboard'
