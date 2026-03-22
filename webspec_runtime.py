@@ -267,41 +267,77 @@ class WebSpecRuntime:
     def _exec_Clear(self, n: Clear):
         self._resolve(n.target).clear()
 
+    # def _exec_Select(self, n: Select):
+    #     el = self._resolve(n.target)
+    #     sel = SeleniumSelect(el)
+    #
+    #     # Try 1: exact visible text
+    #     try:
+    #         sel.select_by_visible_text(n.option)
+    #         return
+    #     except Exception:
+    #         pass
+    #
+    #     # Try 2: exact value attribute
+    #     try:
+    #         sel.select_by_value(n.option)
+    #         return
+    #     except Exception:
+    #         pass
+    #
+    #     # Try 3: case-insensitive partial match on option text
+    #     target = n.option.lower().strip()
+    #     for opt in sel.options:
+    #         if opt.text.lower().strip() == target:
+    #             sel.select_by_visible_text(opt.text)
+    #             return
+    #
+    #     # Try 4: substring match
+    #     for opt in sel.options:
+    #         if target in opt.text.lower().strip():
+    #             sel.select_by_visible_text(opt.text)
+    #             return
+    #
+    #     raise RuntimeError(
+    #         f"Could not select '{n.option}' - available options: "
+    #         f"{[o.text for o in sel.options]}"
+    #     )
+
     def _exec_Select(self, n: Select):
         el = self._resolve(n.target)
         sel = SeleniumSelect(el)
 
+        option = self._eval_runtime_value(n.option)
+        if option is None:
+            option = ""
+        option = str(option)
+
         # Try 1: exact visible text
         try:
-            sel.select_by_visible_text(n.option)
+            sel.select_by_visible_text(option)
             return
         except Exception:
             pass
 
         # Try 2: exact value attribute
         try:
-            sel.select_by_value(n.option)
+            sel.select_by_value(option)
             return
         except Exception:
             pass
 
         # Try 3: case-insensitive partial match on option text
-        target = n.option.lower().strip()
-        for opt in sel.options:
-            if opt.text.lower().strip() == target:
-                sel.select_by_visible_text(opt.text)
-                return
-
-        # Try 4: substring match
+        target = option.lower().strip()
         for opt in sel.options:
             if target in opt.text.lower().strip():
-                sel.select_by_visible_text(opt.text)
+                opt.click()
                 return
 
         raise RuntimeError(
             f"Could not select '{n.option}' - available options: "
             f"{[o.text for o in sel.options]}"
         )
+
 
     def _exec_Check(self, n: Check):
         el = self._resolve(n.target)
@@ -493,12 +529,20 @@ class WebSpecRuntime:
             f"Timed out waiting for element after {timeout}s")
 
     def _exec_WaitUntilURL(self, n: WaitUntilURL):
+        expected = self._eval_runtime_value(n.expected)
+        expected = "" if expected is None else str(expected)
+
         WebDriverWait(self.driver, self.timeout).until(
-            EC.url_contains(n.expected))
+            lambda d: expected in d.current_url
+        )
 
     def _exec_WaitUntilTitle(self, n: WaitUntilTitle):
+        expected = self._eval_runtime_value(n.expected)
+        expected = "" if expected is None else str(expected)
+
         WebDriverWait(self.driver, self.timeout).until(
-            EC.title_contains(n.expected))
+            lambda d: expected in d.title
+        )
 
     # ══════════════════════════════════════════════════════
     #  Variables
@@ -614,6 +658,16 @@ class WebSpecRuntime:
             return l or self._eval_condition(cond.right)
 
         return False
+
+    def _eval_runtime_value(self, value):
+        # Backward compatible:
+        # - if parser already gave us a plain Python value, keep it
+        # - if parser gave us an Expr node, evaluate it
+        if isinstance(value, (str, int, float, bool)) or value is None:
+            return value
+
+        # New parser path: expression AST node
+        return self._eval_expr(value)
 
     # ══════════════════════════════════════════════════════
     #  Misc

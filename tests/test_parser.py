@@ -208,10 +208,16 @@ class TestActions:
         node = parse_one('clear the input "name"')
         assert isinstance(node, Clear)
 
+    # def test_select_from(self):
+    #     node = parse_one('select "Option A" from the dropdown "choices"')
+    #     assert isinstance(node, Select)
+    #     assert node.option == 'Option A'
+
     def test_select_from(self):
         node = parse_one('select "Option A" from the dropdown "choices"')
         assert isinstance(node, Select)
-        assert node.option == 'Option A'
+        assert isinstance(node.option, StringLiteral)
+        assert node.option.value == 'Option A'
 
     def test_check(self):
         node = parse_one('check the checkbox "agree"')
@@ -410,10 +416,16 @@ class TestWaits:
         assert isinstance(node, WaitForElement)
         assert node.timeout == 30
 
+    # def test_wait_until_url(self):
+    #     node = parse_one('wait until url contains "/done"')
+    #     assert isinstance(node, WaitUntilURL)
+    #     assert node.expected == '/done'
+
     def test_wait_until_url(self):
         node = parse_one('wait until url contains "/done"')
         assert isinstance(node, WaitUntilURL)
-        assert node.expected == '/done'
+        assert isinstance(node.expected, StringLiteral)
+        assert node.expected.value == '/done'
 
     def test_wait_until_title(self):
         node = parse_one('wait until title contains "Dashboard"')

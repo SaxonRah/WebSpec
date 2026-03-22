@@ -68,9 +68,15 @@ reserved = {
     'url': 'URL', 'title': 'TITLE',
 }
 
-tokens = list(set(reserved.values())) + [
-    'STRING', 'NUMBER', 'VARIABLE', 'ORDINAL',
-    'NEWLINE', 'PLUS', 'LPAREN', 'RPAREN',
+tokens = list(dict.fromkeys(reserved.values())) + [
+    "STRING",
+    "NUMBER",
+    "VARIABLE",
+    "ORDINAL",
+    "NEWLINE",
+    "PLUS",
+    "LPAREN",
+    "RPAREN",
 ]
 
 # ── Simple tokens ────────────────────────────────────────
