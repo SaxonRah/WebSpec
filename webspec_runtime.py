@@ -47,7 +47,7 @@ class WebSpecRuntime:
     """Execute a parsed WebSpec AST against a browser."""
 
     def __init__(self, driver=None, timeout=10, screenshot_dir='screenshots',
-                 retry_timeout=5, retry_interval=0.3):
+                 retry_timeout=5, retry_interval=0.3, row_failure_mode="collect"):
         self.driver = driver or webdriver.Chrome()
         self.timeout = timeout
         self.screenshot_dir = Path(screenshot_dir)
@@ -64,6 +64,10 @@ class WebSpecRuntime:
         self.errors: list[str] = []
         self.step_timings: list[dict] = []  # for reporting
         self.imports_loaded: set[str] = set()  # for import system
+
+        self.script_stack: list[Path] = []
+        self.row_failure_mode = row_failure_mode  # "fail_fast" or "collect"
+
 
     # ══════════════════════════════════════════════════════
     #  Public API
@@ -87,12 +91,19 @@ class WebSpecRuntime:
                 f"{len(self.errors)} errors"
             )
 
-    def run_script(self, script_text: str):
+    def run_script(self, script_text: str, source_path: str | None = None):
         """Parse and run a WebSpec script string."""
         from webspec_parser import parser as ply_parser
         from webspec_lexer import lexer
-        ast = ply_parser.parse(script_text, lexer=lexer)
-        self.run(ast)
+        lexer.lineno = 1
+        if source_path is not None:
+            self.script_stack.append(Path(source_path).resolve().parent)
+        try:
+            ast = ply_parser.parse(script_text, lexer=lexer)
+            self.run(ast)
+        finally:
+            if source_path is not None:
+                self.script_stack.pop()
 
     def _interpolate(self, value):
         """Replace ${varname} in assertion expected values."""
@@ -171,6 +182,35 @@ class WebSpecRuntime:
         if isinstance(expr, Concat):
             return self._eval_expr(expr.left) + self._eval_expr(expr.right)
         raise RuntimeError(f"Cannot evaluate expression: {expr}")
+
+    def _current_script_dir(self) -> Path:
+        if self.script_stack:
+            return self.script_stack[-1]
+        return Path.cwd()
+
+    def _resolve_runtime_path(self, raw_path: str, *, allow_test_fallbacks: bool = True) -> Path:
+        path = Path(raw_path)
+
+        if path.is_absolute():
+            return path
+
+        candidates = [
+            self._current_script_dir() / path,
+            Path.cwd() / path,
+        ]
+
+        if allow_test_fallbacks:
+            candidates.extend([
+                Path('tests/fixtures') / path,
+                Path('tests') / path,
+            ])
+
+        for candidate in candidates:
+            if candidate.exists():
+                return candidate.resolve()
+
+        # Return the most natural failure path for error messages
+        return (self._current_script_dir() / path).resolve()
 
     # ══════════════════════════════════════════════════════
     #  Navigation
@@ -579,7 +619,7 @@ class WebSpecRuntime:
     #  Misc
     # ══════════════════════════════════════════════════════
 
-    def _exec_Import(self, n: Import):
+    def _exec_Import__old(self, n: Import):
         filepath = Path(n.filepath)
 
         # Resolve relative to the current script's directory
@@ -613,55 +653,92 @@ class WebSpecRuntime:
         if ast and ast.statements:
             self.exec_block(ast.statements)
 
+    def _exec_Import(self, n: Import):
+        filepath = self._resolve_runtime_path(n.filepath, allow_test_fallbacks=True)
+
+        abs_path = str(filepath.resolve())
+        if abs_path in self.imports_loaded:
+            return
+
+        if not filepath.exists():
+            raise RuntimeError(f"Import file not found: {n.filepath}")
+
+        self.imports_loaded.add(abs_path)
+
+        from webspec_lexer import lexer as import_lexer
+        from webspec_parser import parser as import_parser
+
+        script_text = filepath.read_text(encoding='utf-8')
+        import_lexer.lineno = 1
+        ast = import_parser.parse(script_text, lexer=import_lexer)
+
+        self.script_stack.append(filepath.parent)
+        try:
+            if ast and ast.statements:
+                self.exec_block(ast.statements)
+        finally:
+            self.script_stack.pop()
+
     def _exec_WithData(self, n: WithData):
         import csv
-        filepath = Path(n.filepath)
 
+        filepath = self._resolve_runtime_path(n.filepath, allow_test_fallbacks=True)
         if not filepath.exists():
             raise RuntimeError(f"Data file not found: {n.filepath}")
 
         ext = filepath.suffix.lower()
 
-        if ext == '.csv':
-            with open(filepath, 'r', encoding='utf-8') as f:
+        if ext == ".csv":
+            with open(filepath, "r", encoding="utf-8") as f:
                 reader = csv.DictReader(f)
                 rows = list(reader)
-        elif ext == '.json':
-            with open(filepath, 'r', encoding='utf-8') as f:
+        elif ext == ".json":
+            with open(filepath, "r", encoding="utf-8") as f:
                 data = json.load(f)
-                if isinstance(data, list):
-                    rows = data
-                elif isinstance(data, dict):
-                    rows = [data]
-                else:
-                    raise RuntimeError(
-                        f"JSON must be array or object, got {type(data)}")
+            if isinstance(data, list):
+                rows = data
+            elif isinstance(data, dict):
+                rows = [data]
+            else:
+                raise RuntimeError(f"JSON must be array or object, got {type(data)}")
         else:
-            raise RuntimeError(
-                f"Unsupported data format: {ext} (use .csv or .json)")
+            raise RuntimeError(f"Unsupported data format: {ext} (use .csv or .json)")
 
         logger.info(f"Data-driven: {len(rows)} iterations from {filepath}")
 
-        saved_vars = dict(self.variables)
+        base_vars = dict(self.variables)
+        row_count = len(rows)
+        row_failures = []
 
-        for i, row in enumerate(rows):
-            logger.info(f"Data iteration {i + 1}/{len(rows)}: {row}")
-            # Inject row data as variables
-            for key, value in row.items():
-                self.variables[key] = value
-            self.variables['_row_index'] = str(i)
-            self.variables['_row_count'] = str(len(rows))
+        try:
+            for i, row in enumerate(rows):
+                logger.info(f"Data iteration {i + 1}/{row_count}: {row}")
 
-            try:
-                self.exec_block(n.body)
-            except Exception as e:
-                self.errors.append(
-                    f"Data row {i + 1} failed: {e}")
-                logger.error(f"Data row {i + 1} failed: {e}")
+                self.variables = dict(base_vars)
+                for key, value in row.items():
+                    self.variables[key] = value
 
-        # Restore variables (keep any new ones created)
-        for key in saved_vars:
-            self.variables[key] = saved_vars[key]
+                self.variables["_row_index"] = str(i)
+                self.variables["_row_count"] = str(row_count)
+
+                try:
+                    self.exec_block(n.body)
+                except Exception as e:
+                    msg = f"Data row {i + 1} failed: {e}"
+                    self.errors.append(msg)
+                    logger.error(msg)
+
+                    if self.row_failure_mode == "fail_fast":
+                        raise RuntimeError(msg) from e
+
+                    row_failures.append(msg)
+
+            if row_failures:
+                raise RuntimeError(
+                    "One or more data rows failed:\n" + "\n".join(row_failures)
+                )
+        finally:
+            self.variables = base_vars
 
     def _exec_Log(self, n: Log):
         msg = self._eval_expr(n.message)
