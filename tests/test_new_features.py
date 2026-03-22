@@ -76,10 +76,11 @@ end'''
 
 class TestDataDrivenRuntime:
     def test_csv_iteration(self, tmp_path):
-        # Create CSV
         csv_file = tmp_path / 'test.csv'
-        csv_file.write_text('name,email\nAlice,a@test.com\nBob,b@test.com',
-                            encoding='utf-8')
+        csv_file.write_text(
+            'name,email\nAlice,a@test.com\nBob,b@test.com',
+            encoding='utf-8'
+        )
 
         driver = MagicMock()
         type(driver).page_source = PropertyMock(return_value='<html></html>')
@@ -88,13 +89,24 @@ class TestDataDrivenRuntime:
 
         rt = WebSpecRuntime(driver=driver, timeout=2)
 
+        seen = []
+
+        original_exec_log = rt._exec_Log
+
+        def capture_log(node):
+            seen.append(rt._eval_expr(node.message))
+
+        rt._exec_Log = capture_log
+
         node = WithData(
             filepath=str(csv_file),
             body=[Log(message=VarRef(name='name'))],
         )
         rt._exec(node)
-        # Should have iterated twice
-        assert rt.variables.get('_row_count') == '2'
+
+        assert seen == ['Alice', 'Bob']
+        assert rt.variables == {}
+        assert rt.errors == []
 
     def test_json_iteration(self, tmp_path):
         json_file = tmp_path / 'test.json'
@@ -113,12 +125,22 @@ class TestDataDrivenRuntime:
 
         rt = WebSpecRuntime(driver=driver, timeout=2)
 
+        seen = []
+
+        def capture_log(node):
+            seen.append(rt._eval_expr(node.message))
+
+        rt._exec_Log = capture_log
+
         node = WithData(
             filepath=str(json_file),
             body=[Log(message=VarRef(name='url'))],
         )
         rt._exec(node)
-        assert rt.variables.get('_row_count') == '2'
+
+        assert seen == ['http://a.com', 'http://b.com']
+        assert rt.variables == {}
+        assert rt.errors == []
 
     def test_missing_file_raises(self):
         driver = MagicMock()

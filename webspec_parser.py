@@ -65,6 +65,11 @@ def p_statement(p):
                  | import_stmt'''
     p[0] = p[1]
 
+def p_block(p):
+    '''block : newlines statement_list
+             | statement_list
+             | newlines'''
+    p[0] = [] if len(p) == 2 and p.slice[1].type == 'newlines' else (p[2] if len(p) == 3 else p[1])
 
 # ══════════════════════════════════════════════════════════
 #  Element references (the smart-find core)
