@@ -250,6 +250,26 @@ class TestRuntimeAssertions:
         runtime._exec(VerifyCookie(
             name='session', expected='abc123', op='is'))
 
+    def test_verify_url_contains_varref(self, runtime):
+        runtime.variables['path'] = '/dashboard'
+        runtime._exec(VerifyURL(expected=VarRef(name='path'), op='containing'))
+
+    def test_verify_url_contains_interpolated_string(self, runtime):
+        runtime.variables['section'] = 'dashboard'
+        runtime._exec(VerifyURL(expected='/${section}', op='containing'))
+
+    def test_type_text_interpolated_string(self, runtime):
+        runtime.variables['user'] = 'alice'
+        ref = ElementRef(elem_type='input')
+        runtime._exec(TypeText(text='${user}@test.com', target=ref))
+        runtime._mock_element.send_keys.assert_called_once_with('alice@test.com')
+
+    def test_append_text_interpolated_string(self, runtime):
+        runtime.variables['suffix'] = '99'
+        ref = ElementRef(elem_type='input')
+        runtime._exec(AppendText(text='-${suffix}', target=ref))
+        runtime._mock_element.send_keys.assert_called_once_with('-99')
+
 
 # ═══════════════════════════════════════════════════════════
 #  Variables
@@ -424,6 +444,147 @@ class TestRuntimeControlFlow:
             left=VarRef(name='count'), op='is',
             right=StringLiteral(value='5'))
         assert runtime._eval_condition(cond) is True
+
+    def test_condition_compare_typed_number(self, runtime):
+        runtime.variables['count'] = 5
+        cond = CompareCondition(
+            left=VarRef(name='count'), op='is',
+            right=StringLiteral(value='5'))
+        assert runtime._eval_condition(cond) is True
+
+# ═══════════════════════════════════════════════════════════
+#  Typed-value regressions
+# ═══════════════════════════════════════════════════════════
+
+class TestRuntimeTypedValueRegressions:
+    def test_eval_concat_stringifies_number_var(self, runtime):
+        runtime.variables['count'] = 42
+        result = runtime._eval_expr(Concat(
+            left=StringLiteral(value='Found '),
+            right=VarRef(name='count'),
+        ))
+        assert result == 'Found 42'
+
+    def test_log_concat_stringifies_int_variable(self, runtime):
+        runtime.variables['row_count'] = 12
+        runtime._exec(Log(message=Concat(
+            left=StringLiteral(value='Data rows: '),
+            right=VarRef(name='row_count'),
+        )))
+        # No exception is the main regression guard here.
+
+    def test_condition_compare_numeric_string_coercion_is(self, runtime):
+        runtime.variables['count'] = 42
+        cond = CompareCondition(
+            left=VarRef(name='count'),
+            op='is',
+            right=StringLiteral(value='42'),
+        )
+        assert runtime._eval_condition(cond) is True
+
+    def test_condition_compare_numeric_string_coercion_greater_than(self, runtime):
+        runtime.variables['count'] = 42
+        cond = CompareCondition(
+            left=VarRef(name='count'),
+            op='greater_than',
+            right=StringLiteral(value='41'),
+        )
+        assert runtime._eval_condition(cond) is True
+
+    def test_condition_compare_numeric_string_coercion_less_than(self, runtime):
+        runtime.variables['count'] = 42
+        cond = CompareCondition(
+            left=StringLiteral(value='41'),
+            op='less_than',
+            right=VarRef(name='count'),
+        )
+        assert runtime._eval_condition(cond) is True
+
+    def test_condition_compare_numeric_string_non_numeric_falls_back_cleanly(self, runtime):
+        runtime.variables['count'] = 42
+        cond = CompareCondition(
+            left=VarRef(name='count'),
+            op='is',
+            right=StringLiteral(value='forty-two'),
+        )
+        assert runtime._eval_condition(cond) is False
+
+    def test_condition_url_with_variable_value(self, runtime):
+        runtime.variables['path'] = '/dashboard'
+        cond = URLCondition(expected=VarRef(name='path'))
+        assert runtime._eval_condition(cond) is True
+
+    def test_condition_url_with_variable_interpolation_string(self, runtime):
+        runtime.variables['section'] = 'dashboard'
+        cond = URLCondition(expected='/${section}')
+        assert runtime._eval_condition(cond) is True
+
+    def test_wait_until_url_contains_variable_matches_condition_behavior(self, runtime, monkeypatch):
+        runtime.variables['path'] = '/dashboard'
+
+        cond = URLCondition(expected=VarRef(name='path'))
+
+        # Make WebDriverWait immediate and deterministic.
+        class _ImmediateWait:
+            def __init__(self, driver, timeout):
+                self.driver = driver
+                self.timeout = timeout
+
+            def until(self, predicate):
+                result = predicate(self.driver)
+                if not result:
+                    raise TimeoutError("condition not met")
+                return result
+
+        import webspec_runtime
+        monkeypatch.setattr(webspec_runtime, 'WebDriverWait', _ImmediateWait)
+
+        assert runtime._eval_condition(cond) is True
+        runtime._exec(WaitUntilURL(expected=VarRef(name='path')))
+
+    def test_set_count_of_remains_typed_int(self, runtime):
+        ref = ElementRef(elem_type='element')
+        runtime._exec(SetVar(name='n', extract='count', target=ref))
+        assert runtime.variables['n'] == 2
+        assert isinstance(runtime.variables['n'], int)
+
+    def test_verify_count_accepts_typed_int_expected(self, runtime):
+        ref = ElementRef(elem_type='element')
+        runtime._exec(VerifyCount(target=ref, op='is', expected=2))
+
+    def test_for_each_loop_variable_and_count_values_can_coexist(self, runtime):
+        mock1, mock2 = MagicMock(), MagicMock()
+        mock1.text = 'A'
+        mock2.text = 'B'
+        runtime.resolver.resolve_all.return_value = [mock1, mock2]
+
+        ref = ElementRef(elem_type='element')
+        runtime._exec(SetVar(name='loop_count', extract='count', target=ref))
+        runtime._exec(ForEach(
+            target=ref, var_name='item', body=[]
+        ))
+
+        assert runtime.variables['loop_count'] == 2
+        assert isinstance(runtime.variables['loop_count'], int)
+        assert runtime.variables['item'] is mock2
+
+    def test_type_text_stringifies_number_variable(self, runtime):
+        runtime.variables['code'] = 123456
+        ref = ElementRef(elem_type='input')
+        runtime._exec(TypeText(
+            text=VarRef(name='code'),
+            target=ref,
+        ))
+        runtime._mock_element.send_keys.assert_called_once_with('123456')
+
+    def test_append_text_stringifies_number_variable(self, runtime):
+        runtime.variables['suffix'] = 99
+        ref = ElementRef(elem_type='input')
+        runtime._exec(AppendText(
+            text=VarRef(name='suffix'),
+            target=ref,
+        ))
+        runtime._mock_element.send_keys.assert_called_once_with('99')
 
 
 # ═══════════════════════════════════════════════════════════

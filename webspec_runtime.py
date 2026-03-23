@@ -272,16 +272,13 @@ class WebSpecRuntime:
 
     def _exec_TypeText(self, n: TypeText):
         el = self._resolve(n.target)
-        # el.clear()
-        # el.send_keys(self._eval_expr(n.text))
-        text = self._coerce_to_string(self._eval_runtime_value(n.text))
+        text = self._eval_text_value(n.text)
         el.clear()
         el.send_keys(text)
 
     def _exec_AppendText(self, n: AppendText):
         el = self._resolve(n.target)
-        # el.send_keys(self._eval_expr(n.text))
-        el.send_keys(self._coerce_to_string(self._eval_runtime_value(n.text)))
+        el.send_keys(self._eval_text_value(n.text))
 
     def _exec_Clear(self, n: Clear):
         self._resolve(n.target).clear()
@@ -477,7 +474,7 @@ class WebSpecRuntime:
 
     def _exec_VerifyURL(self, n: VerifyURL):
         actual = self.driver.current_url
-        expected = self._interpolate(n.expected)
+        expected = self._eval_text_value(n.expected)
         self._check_string_op(actual, expected, n.op, "URL")
 
     def _exec_VerifyTitle(self, n: VerifyTitle):
@@ -559,8 +556,7 @@ class WebSpecRuntime:
         raise TimeoutError(f"Timed out waiting for element after {timeout}s")
 
     def _exec_WaitUntilURL(self, n: WaitUntilURL):
-        expected = self._eval_runtime_value(n.expected)
-        expected = "" if expected is None else str(expected)
+        expected = self._eval_text_value(n.expected)
 
         WebDriverWait(self.driver, self.timeout).until(
             lambda d: expected in d.current_url
@@ -678,32 +674,30 @@ class WebSpecRuntime:
         # This stores raw numbers in variables
 
         elif isinstance(cond, CompareCondition):
-            l = self._eval_expr(cond.left)
-            r = self._eval_expr(cond.right)
-            op = cond.op
+            left = self._eval_expr(cond.left)
+            right = self._eval_expr(cond.right)
 
-            if op in ("is", "equals"):
-                return l == r
-            elif op == "greater_than":
+            # if cond.op == "is":
+            if cond.op in ["is", "equals"]:
                 try:
-                    return float(l) > float(r)
-                except (ValueError, TypeError):
-                    return l > r
-            elif op == "less_than":
+                    return float(left) == float(right)
+                except (TypeError, ValueError):
+                    return str(left) == str(right)
+
+            elif cond.op == 'greater_than':
                 try:
-                    return float(l) < float(r)
-                except (ValueError, TypeError):
-                    return l < r
-            return False
+                    return float(left) > float(right)
+                except (TypeError, ValueError):
+                    return str(left) > str(right)
+
+            elif cond.op == 'less_than':
+                try:
+                    return float(left) < float(right)
+                except (TypeError, ValueError):
+                    return str(left) < str(right)
 
         elif isinstance(cond, URLCondition):
-            # return cond.expected in self.driver.current_url
-
-            # expected = self._eval_runtime_value(cond.expected)
-            # expected = "" if expected is None else str(expected)
-            # return expected in self.driver.current_url
-
-            expected = self._coerce_to_string(self._eval_runtime_value(cond.expected))
+            expected = self._eval_text_value(cond.expected)
             return expected in self.driver.current_url
 
         elif isinstance(cond, NotCondition):
@@ -716,6 +710,12 @@ class WebSpecRuntime:
             return l or self._eval_condition(cond.right)
 
         return False
+
+    def _eval_text_value(self, value):
+        if isinstance(value, str):
+            return self._interpolate(value)
+        evaluated = self._eval_runtime_value(value)
+        return "" if evaluated is None else str(evaluated)
 
     def _eval_runtime_value(self, value):
         # Backward compatible:
