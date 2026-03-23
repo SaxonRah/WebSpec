@@ -166,7 +166,8 @@ class WebSpecTranspiler:
             modifiers.append('alt')
 
         if modifiers:
-            self._emit(f'press key "{ws_key}" with "{"+".join(modifiers)}"')
+            mods = "+".join(modifiers)
+            self._emit(f'press key "{ws_key}" with "{mods}"')
         else:
             self._emit(f'press key "{ws_key}"')
 

@@ -169,7 +169,7 @@ class VerifyAttr(Node):
 @dataclass
 class VerifyCount(Node):
     target: 'ElementRef | VarElementRef | RawElementRef' = None
-    op: str = 'is'  # is, gt, lt, gte, lte
+    op: str = 'is' # is, equals, greater_than, less_than
     expected: int = 0
 
 @dataclass

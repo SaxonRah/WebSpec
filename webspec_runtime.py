@@ -391,11 +391,24 @@ class WebSpecRuntime:
         ActionChains(self.driver).drag_and_drop(src, dst).perform()
 
     def _exec_PressKey(self, n: PressKey):
+        # This commit makes the AST stable for v1
+        # also fixes the runtime/transpiler mismatch without widening the parser yet.
         key = KEY_MAP.get(n.key.lower(), n.key)
+
         if n.modifier:
-            mod = MODIFIER_MAP.get(n.modifier.lower(), n.modifier)
-            ActionChains(self.driver).key_down(mod).send_keys(key) \
-                .key_up(mod).perform()
+            mods = [m.strip().lower() for m in n.modifier.split('+') if m.strip()]
+            chain = ActionChains(self.driver)
+            resolved_mods = [MODIFIER_MAP.get(m, m) for m in mods]
+
+            for mod in resolved_mods:
+                chain.key_down(mod)
+
+            chain.send_keys(key)
+
+            for mod in reversed(resolved_mods):
+                chain.key_up(mod)
+
+            chain.perform()
         else:
             ActionChains(self.driver).send_keys(key).perform()
 
@@ -431,6 +444,8 @@ class WebSpecRuntime:
             'empty':    lambda: el.get_attribute('value') == '',
         }
         check = checks.get(n.state)
+        if check is None:
+            raise RuntimeError(f"Unsupported verify state: {n.state}")
         self._assert(check(),
                      f"Element is not {n.state} (line {n.line})")
 
@@ -450,15 +465,16 @@ class WebSpecRuntime:
 
     def _exec_VerifyAttr(self, n: VerifyAttr):
         el = self._resolve(n.target)
-        actual = el.get_attribute(n.attr_name) or ''
-        self._check_string_op(actual, n.expected, n.op,
+        actual = el.get_attribute(n.attr_name) or ""
+        expected = self._eval_text_value(n.expected)
+        self._check_string_op(actual, expected, n.op,
                               f"Attribute '{n.attr_name}'")
 
     def _exec_VerifyStyle(self, n: VerifyStyle):
         el = self._resolve(n.target)
         actual = el.value_of_css_property(n.prop) or ''
-        self._check_string_op(actual, n.expected, n.op,
-                              f"Style '{n.prop}'")
+        expected = self._eval_text_value(n.expected)
+        self._check_string_op(actual, expected, n.op, f"Style '{n.prop}'")
 
     def _exec_VerifyCount(self, n: VerifyCount):
         elements = self._resolve_all(n.target)
@@ -479,14 +495,14 @@ class WebSpecRuntime:
 
     def _exec_VerifyTitle(self, n: VerifyTitle):
         actual = self.driver.title
-        expected = self._interpolate(n.expected)
+        expected = self._eval_text_value(n.expected)
         self._check_string_op(actual, expected, n.op, "Title")
 
     def _exec_VerifyCookie(self, n: VerifyCookie):
         cookie = self.driver.get_cookie(n.name)
         actual = cookie['value'] if cookie else ''
-        self._check_string_op(actual, n.expected, n.op,
-                              f"Cookie '{n.name}'")
+        expected = self._eval_text_value(n.expected)
+        self._check_string_op(actual, expected, n.op, f"Cookie '{n.name}'")
 
     def _exec_VerifyDownloaded(self, n: VerifyDownloaded):
         download_dir = self.variables.get('_download_dir', '/tmp/downloads')
@@ -496,8 +512,9 @@ class WebSpecRuntime:
 
     def _exec_VerifyAlert(self, n: VerifyAlert):
         alert = self.driver.switch_to.alert
-        self._assert(n.expected in alert.text,
-                     f"Alert text '{alert.text}' != '{n.expected}'")
+        expected = self._eval_text_value(n.expected)
+        self._assert(expected in alert.text,
+                     f"Alert text '{alert.text}' does not contain '{expected}'")
 
     def _check_string_op(self, actual, expected, op, label):
         ops = {
@@ -557,15 +574,12 @@ class WebSpecRuntime:
 
     def _exec_WaitUntilURL(self, n: WaitUntilURL):
         expected = self._eval_text_value(n.expected)
-
         WebDriverWait(self.driver, self.timeout).until(
             lambda d: expected in d.current_url
         )
 
     def _exec_WaitUntilTitle(self, n: WaitUntilTitle):
-        expected = self._eval_runtime_value(n.expected)
-        expected = "" if expected is None else str(expected)
-
+        expected = self._eval_text_value(n.expected)
         WebDriverWait(self.driver, self.timeout).until(
             lambda d: expected in d.title
         )
@@ -712,10 +726,32 @@ class WebSpecRuntime:
         return False
 
     def _eval_text_value(self, value):
-        if isinstance(value, str):
-            return self._interpolate(value)
-        evaluated = self._eval_runtime_value(value)
-        return "" if evaluated is None else str(evaluated)
+        resolved = self._eval_runtime_value(value)
+
+        if resolved is None:
+            return ""
+
+        if isinstance(resolved, str):
+            import re
+
+            def replace_braced(match):
+                name = match.group(1)
+                if name not in self.variables:
+                    raise RuntimeError(f"Variable ${name} is not set")
+                v = self.variables[name]
+                return "" if v is None else str(v)
+
+            def replace_unbraced(match):
+                name = match.group(1)
+                if name not in self.variables:
+                    raise RuntimeError(f"Variable ${name} is not set")
+                v = self.variables[name]
+                return "" if v is None else str(v)
+
+            resolved = re.sub(r'\$\{(\w+)\}', replace_braced, resolved)
+            resolved = re.sub(r'(?<!\$)\$(\w+)', replace_unbraced, resolved)
+
+        return str(resolved)
 
     def _eval_runtime_value(self, value):
         # Backward compatible:

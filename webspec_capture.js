@@ -76,12 +76,19 @@
 
         // Element type classification
         var elemType = 'element';
-        if (tag === 'button' || (tag === 'input' && (attrs.type === 'submit' || attrs.type === 'button'))) elemType = 'button';
-        else if (tag === 'a') elemType = 'link';
-        else if (tag === 'input' || tag === 'textarea') elemType = 'input';
-        else if (tag === 'select') elemType = 'dropdown';
-        else if (tag === 'input' && attrs.type === 'checkbox') elemType = 'checkbox';
-        else if (tag === 'input' && attrs.type === 'radio') elemType = 'radio';
+        if (tag === 'button' || (tag === 'input' && (attrs.type === 'submit' || attrs.type === 'button'))) {
+          elemType = 'button';
+        } else if (tag === 'a') {
+          elemType = 'link';
+        } else if (tag === 'input' && attrs.type === 'checkbox') {
+          elemType = 'checkbox';
+        } else if (tag === 'input' && attrs.type === 'radio') {
+          elemType = 'radio';
+        } else if (tag === 'select') {
+          elemType = 'dropdown';
+        } else if (tag === 'input' || tag === 'textarea') {
+          elemType = 'input';
+        }
         else if (tag === 'img') elemType = 'image';
         else if (/^h[1-6]$/.test(tag)) elemType = 'heading';
         else if (tag === 'table') elemType = 'table';
@@ -109,6 +116,8 @@
             siblingCount: siblings ? siblings.length : 1,
         };
     }
+
+    R._getContext = getContext;
 
     function pushEvent(type, data) {
         if (!R.recording) return;

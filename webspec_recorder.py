@@ -44,6 +44,10 @@ class WebSpecRecorder:
     def inject(self):
         """Inject the JS event capture layer into the page."""
         self.driver.execute_script(JS_CAPTURE)
+        self.driver.execute_script(
+            "if (window.__webspec_recorder) { window.__webspec_recorder.recording = arguments[0]; }",
+            self.recording,
+        )
         logger.info("Event capture injected")
 
     def start(self):
@@ -51,8 +55,10 @@ class WebSpecRecorder:
         self.recording = True
         self._stop_flag = False
         self.inject()
-        self.driver.execute_script(
-            "window.__webspec_recorder.recording = true;")
+        try:
+            self.driver.execute_script("window.__webspec_recorder.recording = true;")
+        except Exception:
+            pass
 
         # Start polling thread
         self._poll_thread = threading.Thread(
@@ -83,12 +89,14 @@ class WebSpecRecorder:
 
     def pause(self):
         """Pause recording without losing events."""
+        self.recording = False
         self.driver.execute_script(
             "window.__webspec_recorder.recording = false;")
         logger.info("Recording paused")
 
     def resume(self):
         """Resume recording."""
+        self.recording = True
         self.driver.execute_script(
             "window.__webspec_recorder.recording = true;")
         logger.info("Recording resumed")

@@ -114,22 +114,6 @@ class SmartResolver:
                     raise
                 time.sleep(self.retry_interval)
 
-    # def resolve_all(self, ref, variables=None):
-    #     """Return ALL matching elements as Selenium WebElements."""
-    #     variables = variables or {}
-    #     self._refresh_soup()
-    #     candidates = self._get_candidates(ref.elem_type)
-    #     candidates = self._apply_selectors(candidates, ref.selectors,
-    #                                         variables)
-    #     results = []
-    #     for tag in candidates:
-    #         xpath = self._tag_to_xpath(tag)
-    #         try:
-    #             results.append(
-    #                 self.driver.find_element(By.XPATH, xpath))
-    #         except Exception:
-    #             continue
-    #     return results
     def resolve_all(self, ref, variables=None):
         """Return ALL matching elements as Selenium WebElements."""
         variables = variables or {}
@@ -139,6 +123,22 @@ class SmartResolver:
         while True:
             try:
                 self._refresh_soup()
+
+                if isinstance(ref, RawElementRef):
+                    if ref.locator.startswith('/') or ref.locator.startswith('('):
+                        return self.driver.find_elements(By.XPATH, ref.locator)
+                    return self.driver.find_elements(By.CSS_SELECTOR, ref.locator)
+
+                if isinstance(ref, VarElementRef):
+                    stored = variables.get(ref.var_name)
+                    if stored is None:
+                        raise RuntimeError(f"Variable ${ref.var_name} is not set")
+                    if isinstance(stored, list):
+                        return stored
+                    if isinstance(stored, tuple):
+                        return list(stored)
+                    return [stored]
+
                 candidates = self._get_candidates(ref.elem_type)
                 candidates = self._apply_selectors(candidates, ref.selectors, variables)
 
@@ -149,7 +149,6 @@ class SmartResolver:
                         results.append(self.driver.find_element(By.XPATH, xpath))
                     except Exception:
                         continue
-
                 return results
 
             except Exception as e:
@@ -158,26 +157,62 @@ class SmartResolver:
                     raise last_error
                 time.sleep(self.retry_interval)
 
+    # def resolve_all(self, ref, variables=None):
+    #     """Return ALL matching elements as Selenium WebElements."""
+    #     variables = variables or {}
+    #     deadline = time.time() + self.retry_timeout
+    #     last_error = None
+    #
+    #     while True:
+    #         try:
+    #             self._refresh_soup()
+    #             candidates = self._get_candidates(ref.elem_type)
+    #             candidates = self._apply_selectors(candidates, ref.selectors, variables)
+    #
+    #             results = []
+    #             for tag in candidates:
+    #                 xpath = self._tag_to_xpath(tag)
+    #                 try:
+    #                     results.append(self.driver.find_element(By.XPATH, xpath))
+    #                 except Exception:
+    #                     continue
+    #
+    #             return results
+    #
+    #         except Exception as e:
+    #             last_error = e
+    #             if time.time() >= deadline:
+    #                 raise last_error
+    #             time.sleep(self.retry_interval)
+
     # ── Variable interpolation ───────────────────────────
     @staticmethod
     def _interpolate(value, variables):
         """Replace ${varname} placeholders with runtime variable values."""
-        if '${' not in value:
+        if '$' not in value:
             return value
 
-        def _replace(match):
+        def _replace_braced(match):
             name = match.group(1)
             resolved = variables.get(name)
             if resolved is None:
-                raise RuntimeError(
-                    f"Variable ${name} used in selector but not set"
-                )
-            # If it's a WebElement, grab its text
+                raise RuntimeError(f"Variable ${name} used in selector but not set")
             if hasattr(resolved, 'text'):
                 return resolved.text
             return str(resolved)
 
-        return re.sub(r'\$\{(\w+)}', _replace, value)
+        def _replace_unbraced(match):
+            name = match.group(1)
+            resolved = variables.get(name)
+            if resolved is None:
+                raise RuntimeError(f"Variable ${name} used in selector but not set")
+            if hasattr(resolved, 'text'):
+                return resolved.text
+            return str(resolved)
+
+        value = re.sub(r'\$\{(\w+)\}', _replace_braced, value)
+        value = re.sub(r'(?<!\$)\$(\w+)', _replace_unbraced, value)
+        return value
 
     # ── Resolve raw CSS / XPath ──────────────────────────
     def _resolve_raw(self, locator):
@@ -241,8 +276,12 @@ class SmartResolver:
         kind = sel.kind
 
         # Resolve any ${variable} references in selector values
-        value = self._interpolate(sel.value, variables) if sel.value else ''
-        extra = self._interpolate(sel.extra, variables) if sel.extra else ''
+        # value = self._interpolate(sel.value, variables) if sel.value else ''
+        # extra = self._interpolate(sel.extra, variables) if sel.extra else ''
+        tvalue = self._stringify_runtime_value(sel.value) if sel.value is not None else ''
+        textra = self._stringify_runtime_value(sel.extra) if sel.extra is not None else ''
+        value = self._interpolate(tvalue, variables) if tvalue else ''
+        extra = self._interpolate(textra, variables) if textra else ''
 
         if kind == 'text':
             return self._filter_fuzzy_text(candidates, value)

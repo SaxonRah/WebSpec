@@ -42,43 +42,48 @@ def main():
         format='%(asctime)s [%(levelname)s] %(message)s'
     )
 
-    # Set up browser
     driver = None
-    if args.browser == 'chrome':
-        opts = webdriver.ChromeOptions()
-        if args.headless:
-            opts.add_argument('--headless=new')
-        driver = webdriver.Chrome(options=opts)
-    elif args.browser == 'firefox':
-        opts = webdriver.FirefoxOptions()
-        if args.headless:
-            opts.add_argument('--headless')
-        driver = webdriver.Firefox(options=opts)
-    elif args.browser == 'edge':
-        opts = webdriver.EdgeOptions()
-        if args.headless:
-            opts.add_argument('--headless=new')
-        driver = webdriver.Edge(options=opts)
-
-    driver.implicitly_wait(2)
-
-    script_path = Path(args.script)
-    script_text = script_path.read_text(encoding='utf-8')
-
-    # Resolve BASE_URL
-    if args.base_url:
-        script_text = script_text.replace('BASE_URL', args.base_url)
-    else:
-        fixture_html = script_path.parent / 'test_site.html'
-        if not fixture_html.exists():
-            fixture_html = script_path.parent / 'fixtures' / 'test_site.html'
-        if fixture_html.exists():
-            file_url = fixture_html.resolve().as_uri()
-            script_text = script_text.replace('BASE_URL', file_url)
-
     runtime = None
+
     try:
+        # Set up browser
+        if args.browser == 'chrome':
+            opts = webdriver.ChromeOptions()
+            if args.headless:
+                opts.add_argument('--headless=new')
+            driver = webdriver.Chrome(options=opts)
+        elif args.browser == 'firefox':
+            opts = webdriver.FirefoxOptions()
+            if args.headless:
+                opts.add_argument('--headless')
+            driver = webdriver.Firefox(options=opts)
+        elif args.browser == 'edge':
+            opts = webdriver.EdgeOptions()
+            if args.headless:
+                opts.add_argument('--headless=new')
+            driver = webdriver.Edge(options=opts)
+        else:
+            raise RuntimeError(f"Unsupported browser: {args.browser}")
+
+        driver.implicitly_wait(2)
+
+        script_path = Path(args.script)
+        script_text = script_path.read_text(encoding='utf-8')
+
+        # Resolve BASE_URL
+        if args.base_url:
+            script_text = script_text.replace('BASE_URL', args.base_url)
+        else:
+            fixture_html = script_path.parent / 'test_site.html'
+            if not fixture_html.exists():
+                fixture_html = script_path.parent / 'fixtures' / 'test_site.html'
+            if fixture_html.exists():
+                file_url = fixture_html.resolve().as_uri()
+                script_text = script_text.replace('BASE_URL', file_url)
+
+        lexer.lineno = 1
         ast = parser.parse(script_text, lexer=lexer)
+
         runtime = WebSpecRuntime(
             driver=driver,
             timeout=args.timeout,
@@ -95,7 +100,7 @@ def main():
         runtime.run(ast)
         print(f"\n✓ PASSED - {runtime.step_count} steps, 0 errors")
 
-        if args.report:
+        if args.report and runtime is not None:
             from webspec_report import generate_report
             path = generate_report(
                 runtime,
@@ -105,25 +110,10 @@ def main():
             print(f"  Report: {path}")
 
         sys.exit(0)
-    # except (AssertionError, TimeoutError, RuntimeError) as e:
-    #     print(f"\n✗ FAILED - {e}")
-    #
-    #     if args.report:
-    #         from webspec_report import generate_report
-    #         path = generate_report(
-    #             runtime,
-    #             script_name=script_path.name,
-    #             output_path=args.report_path,
-    #         )
-    #         print(f"  Report: {path}")
-    #
-    #     sys.exit(1)
-    # except SyntaxError as e:
-    #     print(f"\n✗ PARSE ERROR - {e}")
-    #     sys.exit(2)
+
     except (AssertionError, TimeoutError, RuntimeError) as e:
         print(f"\n✗ FAILED - {e}")
-        if args.report:
+        if args.report and runtime is not None:
             from webspec_report import generate_report
             path = generate_report(
                 runtime,
@@ -139,7 +129,7 @@ def main():
 
     except Exception as e:
         print(f"\n✗ UNEXPECTED ERROR - {e}")
-        if args.report:
+        if args.report and runtime is not None:
             from webspec_report import generate_report
             path = generate_report(
                 runtime,
@@ -148,8 +138,10 @@ def main():
             )
             print(f" Report: {path}")
         sys.exit(3)
+
     finally:
-        driver.quit()
+        if driver is not None:
+            driver.quit()
 
 
 if __name__ == '__main__':
