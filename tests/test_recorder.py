@@ -262,6 +262,41 @@ def test_poll_events_handles_collect_exceptions_gracefully(recorder_env, monkeyp
     assert recorder_env.sleep_calls == [0.25, 0.25]
 
 
+def test_pause_ignores_driver_script_errors(recorder_env):
+    recorder = recorder_env.recorder
+    driver = recorder_env.driver
+
+    driver.raise_on_execute = True
+    # Should NOT raise even though driver.execute_script fails
+    recorder.pause()
+    # Local state should still update
+    assert recorder.recording is False
+    # No scripts should be recorded since execution failed
+    assert driver.scripts == []
+
+def test_resume_ignores_driver_script_errors(recorder_env):
+    recorder = recorder_env.recorder
+    driver = recorder_env.driver
+
+    driver.raise_on_execute = True
+    recorder.resume()
+    # Local state should still update
+    assert recorder.recording is True
+    # No scripts recorded due to failure
+    assert driver.scripts == []
+
+def test_clear_ignores_driver_script_errors_and_clears_local_events(recorder_env):
+    recorder = recorder_env.recorder
+    driver = recorder_env.driver
+
+    recorder.events = [{"eventType": "click"}]
+    driver.raise_on_execute = True
+    recorder.clear()
+    # Local events MUST still clear even if browser call fails
+    assert recorder.events == []
+    # No scripts recorded due to failure
+    assert driver.scripts == []
+
 def test_pause_and_resume_toggle_browser_recording_flag(recorder_env):
     recorder = recorder_env.recorder
     driver = recorder_env.driver

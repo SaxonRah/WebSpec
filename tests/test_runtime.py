@@ -396,6 +396,28 @@ class TestRuntimeControlFlow:
         ))
         assert runtime.variables['_error'] == 'boom'
 
+    def test_trycatch_scopes_error_variable(self, runtime):
+        runtime.variables.pop("_error", None)
+        node = TryCatch(
+            try_body=[
+                Log(message=StringLiteral("boom"))
+            ],
+            catch_body=[]
+        )
+        runtime._exec_TryCatch(node)
+        assert "_error" not in runtime.variables
+
+    def test_trycatch_restores_previous_error(self, runtime):
+        runtime.variables["_error"] = "outer"
+        node = TryCatch(
+            try_body=[
+                Log(message=StringLiteral("boom"))
+            ],
+            catch_body=[]
+        )
+        runtime._exec_TryCatch(node)
+        assert runtime.variables["_error"] == "outer"
+
     def test_define_and_call(self, runtime):
         # Define
         runtime._exec(DefineSub(

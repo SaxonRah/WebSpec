@@ -117,6 +117,8 @@ def main():
                 runtime.variables[name] = value
 
         runtime.run(ast)
+        # runtime.run_script(script_text, source_path=str(script_path))
+
         print(f"\n✓ PASSED - {runtime.step_count} steps, 0 errors")
 
         if args.report and runtime is not None:

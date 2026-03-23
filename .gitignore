@@ -7,3 +7,5 @@ parsetab.py
 /tests/__pycache__
 /tests/weather_shopper/screenshots
 /tests/fixtures/screenshots
+mega_source.html
+mega_cookies.json

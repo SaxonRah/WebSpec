@@ -42,6 +42,7 @@ MODIFIER_MAP = {
     'command': Keys.COMMAND,
 }
 
+_MISSING = object()
 
 class WebSpecRuntime:
     """Execute a parsed WebSpec AST against a browser."""
@@ -420,9 +421,27 @@ class WebSpecRuntime:
 
         chain.perform()
 
+    def _resolve_output_path(self, raw_path: str) -> Path:
+        path = Path(raw_path)
+        if path.is_absolute():
+            return path
+        return (self._current_script_dir() / path).resolve()
+
+    # def _exec_Upload(self, n: Upload):
+    #     el = self._resolve(n.target)
+    #     el.send_keys(os.path.abspath(n.filepath))
     def _exec_Upload(self, n: Upload):
         el = self._resolve(n.target)
-        el.send_keys(os.path.abspath(n.filepath))
+        path = self._eval_text_value(n.filepath)
+        try:
+            resolved = self._resolve_runtime_path(
+                path,
+                allow_test_fallbacks=True,
+            )
+            path_to_send = str(resolved)
+        except Exception:
+            path_to_send = path
+        el.send_keys(path_to_send)
 
     def _exec_Submit(self, n: Submit):
         self._resolve(n.target).submit()
@@ -600,23 +619,28 @@ class WebSpecRuntime:
         if n.extract == 'text':
             el = self._resolve(n.target)
             self.variables[n.name] = el.text
+            # self._store_variable(n.name, el.text)
         elif n.extract == 'attr':
             el = self._resolve(n.target)
             self.variables[n.name] = el.get_attribute(n.attr_name)
+            # self._store_variable(n.name, el.get_attribute(n.attr_name))
         elif n.extract == 'value':
             el = self._resolve(n.target)
             self.variables[n.name] = el.get_attribute('value')
+            # self._store_variable(n.name, el.get_attribute('value'))
         elif n.extract == 'count':
             elements = self._resolve_all(n.target)
             self.variables[n.name] = len(elements)
+            # self._store_variable(n.name, len(elements))
         elif n.extract == 'url':
             self.variables[n.name] = self.driver.current_url
+            # self._store_variable(n.name, self.driver.current_url)
         elif n.extract == 'title':
             self.variables[n.name] = self.driver.title
+            # self._store_variable(n.name, self.driver.title)
         else:
-            # self.variables[n.name] = self._eval_expr(n.value)
-            value = self._eval_runtime_value(n.value)
-            self.variables[n.name] = value
+            self.variables[n.name] = self._eval_runtime_value(n.value)
+            # self._store_variable(n.name, self._eval_runtime_value(n.value))
 
     # ══════════════════════════════════════════════════════
     #  Control flow
@@ -644,6 +668,19 @@ class WebSpecRuntime:
         for el in elements:
             self.variables[n.var_name] = el
             self.exec_block(n.body)
+    # def _exec_ForEach(self, n: ForEach):
+    #     elements = self._resolve_all(n.target)
+    #     previous = self.variables.get(n.var_name, _MISSING)
+    #
+    #     try:
+    #         for el in elements:
+    #             self.variables[n.var_name] = el
+    #             self.exec_block(n.body)
+    #     finally:
+    #         if previous is _MISSING:
+    #             self.variables.pop(n.var_name, None)
+    #         else:
+    #             self.variables[n.var_name] = previous
 
     def _exec_TryCatch(self, n: TryCatch):
         try:
@@ -651,6 +688,20 @@ class WebSpecRuntime:
         except Exception as e:
             self.variables['_error'] = str(e)
             self.exec_block(n.catch_body)
+    # def _exec_TryCatch(self, n: TryCatch):
+    #     previous = self.variables.get("_error", _MISSING)
+    #
+    #     try:
+    #         try:
+    #             self.exec_block(n.try_body)
+    #         except Exception as e:
+    #             self.variables["_error"] = str(e)
+    #             self.exec_block(n.catch_body)
+    #     finally:
+    #         if previous is _MISSING:
+    #             self.variables.pop("_error", None)
+    #         else:
+    #             self.variables["_error"] = previous
 
     def _exec_DefineSub(self, n: DefineSub):
         self.subroutines[n.name] = n.body
@@ -931,9 +982,18 @@ class WebSpecRuntime:
         if self.driver.window_handles:
             self.driver.switch_to.window(self.driver.window_handles[-1])
 
+    # def _exec_SaveSource(self, n: SaveSource):
+    #     Path(n.filename).write_text(self.driver.page_source, encoding='utf-8')
     def _exec_SaveSource(self, n: SaveSource):
-        Path(n.filename).write_text(self.driver.page_source, encoding='utf-8')
+        out = self._resolve_output_path(self._eval_text_value(n.filename))
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(self.driver.page_source, encoding='utf-8')
 
+    # def _exec_SaveCookies(self, n: SaveCookies):
+    #     cookies = self.driver.get_cookies()
+    #     Path(n.filename).write_text(json.dumps(cookies, indent=2), encoding='utf-8')
     def _exec_SaveCookies(self, n: SaveCookies):
+        out = self._resolve_output_path(self._eval_text_value(n.filename))
+        out.parent.mkdir(parents=True, exist_ok=True)
         cookies = self.driver.get_cookies()
-        Path(n.filename).write_text(json.dumps(cookies, indent=2), encoding='utf-8')
+        out.write_text(json.dumps(cookies, indent=2), encoding='utf-8')

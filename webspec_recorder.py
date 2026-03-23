@@ -87,25 +87,49 @@ class WebSpecRecorder:
 
         logger.info(f"Recording stopped: {len(self.events)} events captured")
 
+    # def pause(self):
+    #     """Pause recording without losing events."""
+    #     self.recording = False
+    #     self.driver.execute_script(
+    #         "window.__webspec_recorder.recording = false;")
+    #     logger.info("Recording paused")
     def pause(self):
         """Pause recording without losing events."""
         self.recording = False
-        self.driver.execute_script(
-            "window.__webspec_recorder.recording = false;")
+        try:
+            self.driver.execute_script("window.__webspec_recorder.recording = false;")
+        except Exception as e:
+            logger.debug(f"Pause failed: {e}")
         logger.info("Recording paused")
 
+    # def resume(self):
+    #     """Resume recording."""
+    #     self.recording = True
+    #     self.driver.execute_script(
+    #         "window.__webspec_recorder.recording = true;")
+    #     logger.info("Recording resumed")
     def resume(self):
         """Resume recording."""
         self.recording = True
-        self.driver.execute_script(
-            "window.__webspec_recorder.recording = true;")
+        try:
+            self.driver.execute_script("window.__webspec_recorder.recording = true;")
+        except Exception as e:
+            logger.debug(f"Resume failed: {e}")
         logger.info("Recording resumed")
 
+    # def clear(self):
+    #     """Clear all captured events."""
+    #     self.events = []
+    #     self.driver.execute_script(
+    #         "window.__webspec_recorder.events = [];")
+    #     logger.info("Events cleared")
     def clear(self):
         """Clear all captured events."""
         self.events = []
-        self.driver.execute_script(
-            "window.__webspec_recorder.events = [];")
+        try:
+            self.driver.execute_script("window.__webspec_recorder.events = [];")
+        except Exception as e:
+            logger.debug(f"Clear failed: {e}")
         logger.info("Events cleared")
 
     def generate(self) -> str:
@@ -131,15 +155,30 @@ class WebSpecRecorder:
     def collect_events(self):
         """Pull events from the browser JS queue."""
         try:
-            # Atomically drain the JS event queue
             new_events = self.driver.execute_script("""
-                var evts = window.__webspec_recorder.events.splice(0);
-                return evts;
+                if (!window.__webspec_recorder || !window.__webspec_recorder.events) {
+                    return [];
+                }
+                return window.__webspec_recorder.events.splice(0);
+            """)
+            if isinstance(new_events, list):
+                self.events.extend(e for e in new_events if isinstance(e, dict))
+        except Exception as e:
+            logger.debug(f"collect_events failed: {e}")
+
+    def collect_events(self):
+        """Pull events from the browser JS queue."""
+        try:
+            new_events = self.driver.execute_script("""
+                if (!window.__webspec_recorder || !window.__webspec_recorder.events) {
+                    return [];
+                }
+                return window.__webspec_recorder.events.splice(0);
             """)
             if new_events:
                 self.events.extend(new_events)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Collect events failed: {e}")
 
     def reinject_if_needed(self):
         """Re-inject capture script after page navigation."""

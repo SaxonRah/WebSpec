@@ -74,10 +74,26 @@ class SmartResolver:
         if isinstance(ref, RawElementRef):
             return self._resolve_raw(ref.locator)
 
+        # if isinstance(ref, VarElementRef):
+        #     stored = variables.get(ref.var_name)
+        #     if stored is None:
+        #         raise RuntimeError(f"Variable ${ref.var_name} is not set")
+        #     return stored
+
         if isinstance(ref, VarElementRef):
             stored = variables.get(ref.var_name)
             if stored is None:
                 raise RuntimeError(f"Variable ${ref.var_name} is not set")
+
+            if isinstance(stored, (list, tuple)):
+                if not stored:
+                    raise RuntimeError(f"Variable ${ref.var_name} is empty")
+                stored = stored[0]
+
+            if not (hasattr(stored, "click") or hasattr(stored, "tag_name")):
+                raise RuntimeError(
+                    f"Variable ${ref.var_name} does not contain an element"
+                )
             return stored
 
         deadline = time.time() + self.retry_timeout
