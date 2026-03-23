@@ -371,27 +371,54 @@ class WebSpecRuntime:
         dst = self._resolve(n.target)
         ActionChains(self.driver).drag_and_drop(src, dst).perform()
 
+    # def _exec_PressKey(self, n: PressKey):
+    #     # This commit makes the AST stable for v1
+    #     # also fixes the runtime/transpiler mismatch without widening the parser yet.
+    #     key = KEY_MAP.get(n.key.lower(), n.key)
+    #
+    #     if n.modifier:
+    #         mods = [m.strip().lower() for m in n.modifier.split('+') if m.strip()]
+    #         chain = ActionChains(self.driver)
+    #         resolved_mods = [MODIFIER_MAP.get(m, m) for m in mods]
+    #
+    #         for mod in resolved_mods:
+    #             chain.key_down(mod)
+    #
+    #         chain.send_keys(key)
+    #
+    #         for mod in reversed(resolved_mods):
+    #             chain.key_up(mod)
+    #
+    #         chain.perform()
+    #     else:
+    #         ActionChains(self.driver).send_keys(key).perform()
+
     def _exec_PressKey(self, n: PressKey):
-        # This commit makes the AST stable for v1
-        # also fixes the runtime/transpiler mismatch without widening the parser yet.
         key = KEY_MAP.get(n.key.lower(), n.key)
+        chain = ActionChains(self.driver)
 
-        if n.modifier:
-            mods = [m.strip().lower() for m in n.modifier.split('+') if m.strip()]
-            chain = ActionChains(self.driver)
-            resolved_mods = [MODIFIER_MAP.get(m, m) for m in mods]
+        modifier_names = []
 
-            for mod in resolved_mods:
-                chain.key_down(mod)
-
-            chain.send_keys(key)
-
-            for mod in reversed(resolved_mods):
-                chain.key_up(mod)
-
-            chain.perform()
+        if hasattr(n, "modifiers") and n.modifiers:
+            modifier_names = list(n.modifiers)
         else:
-            ActionChains(self.driver).send_keys(key).perform()
+            raw_modifier = getattr(n, "modifier", None)
+            if raw_modifier:
+                modifier_names = [m.strip() for m in str(raw_modifier).split("+") if m.strip()]
+
+        resolved_modifiers = [
+            MODIFIER_MAP.get(name.lower(), name) for name in modifier_names
+        ]
+
+        for mod in resolved_modifiers:
+            chain.key_down(mod)
+
+        chain.send_keys(key)
+
+        for mod in reversed(resolved_modifiers):
+            chain.key_up(mod)
+
+        chain.perform()
 
     def _exec_Upload(self, n: Upload):
         el = self._resolve(n.target)

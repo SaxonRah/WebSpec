@@ -35,6 +35,9 @@ def main():
                     help='Generate HTML test report')
     ap.add_argument('--report-path', default=None,
                     help='Output path for HTML report')
+    ap.add_argument('--row-failure-mode', default='collect', choices=['collect', 'fail_fast'],
+                    help='Behavior for USING data rows: '
+                         'collect all row failures or stop on first failure')
     args = ap.parse_args()
 
     logging.basicConfig(
@@ -89,12 +92,23 @@ def main():
         lexer.lineno = 1
         ast = parser.parse(script_text, lexer=lexer)
 
-        runtime = WebSpecRuntime(
-            driver=driver,
-            timeout=args.timeout,
-            retry_timeout=args.retry_timeout,
-            retry_interval=args.retry_interval,
-        )
+        try:
+            runtime = WebSpecRuntime(
+                driver=driver,
+                timeout=args.timeout,
+                retry_timeout=args.retry_timeout,
+                retry_interval=args.retry_interval,
+                row_failure_mode=args.row_failure_mode,
+            )
+        except TypeError as e:
+            if "row_failure_mode" not in str(e):
+                raise
+            runtime = WebSpecRuntime(
+                driver=driver,
+                timeout=args.timeout,
+                retry_timeout=args.retry_timeout,
+                retry_interval=args.retry_interval,
+            )
 
         # Inject CLI --var values
         for var_str in args.var:

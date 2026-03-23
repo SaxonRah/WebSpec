@@ -61,7 +61,7 @@ WebSpec/
 │   └── webspec_report.py         HTML test report generator
 │
 ├── Documentation
-│   └── OPERATORS_MANUAL.md       Full language reference & tutorial
+│   └── OperatorsManual.md       Full language reference & tutorial
 │
 ├── Tests
 │   ├── conftest.py               Pytest plugin - auto-discovers .ws files
@@ -214,6 +214,9 @@ Key features:
 - **Variable interpolation**
   - `${varname}` in selector values is
     resolved at runtime from the variables' dict.
+
+- **Data-driven test execution**
+  - `using "file.csv" ... end`
 
 ### Runtime (`webspec_runtime.py`)
 
@@ -427,28 +430,60 @@ always get the full picture.
 
 ---
 
-## Data-Driven Testing
+## Data-driven tests
 
-The `using` keyword runs a block once per row from a CSV or JSON file.
-Column headers (CSV) or object keys (JSON) become `$variables`.
-```bash
-# users.csv
-username,password
-alice@test.com,pass123
-bob@test.com,pass456
-```
-```
+WebSpec supports data-driven execution with a `using` block.
+
+```webspec
 using "users.csv"
-    type $username into the input near "Email"
-    type $password into the input near "Password"
-    click the button "Sign In"
-    take screenshot
+    open "/login"
+    type "username" with "$username"
+    type "password" with "$password"
+    click "Login"
+    verify text "Welcome"
 end
+````
+
+### How it works
+
+* `using "file.csv"` runs the enclosed block once per row in the CSV file
+* each column becomes a variable available inside the block
+* variables are referenced with `$name`
+* execution ends with `end`
+
+For example, if `users.csv` contains:
+
+```csv
+username,password
+alice,secret1
+bob,secret2
 ```
 
-If one row fails, the error is logged and execution continues to
-the next row. Special variables `$_row_index` (0-based) and
-`$_row_count` are available inside the block.
+then the block runs twice:
+
+* once with `$username = alice`, `$password = secret1`
+* once with `$username = bob`, `$password = secret2`
+
+### Failure behavior
+
+Data-driven runs support two row failure modes:
+
+* `collect` — continue running all rows and report all row failures
+* `fail_fast` — stop on the first failing row
+
+From the CLI:
+
+```bash
+python webspec_cli.py tests/login.ws --row-failure-mode collect
+python webspec_cli.py tests/login.ws --row-failure-mode fail_fast
+```
+
+### Notes
+
+* Current syntax is `using "file.csv" ... end`
+* This is the language form implemented by the parser and runtime
+* If you are scanning examples quickly, note that `using` is not just a convenience macro; it is the full data-driven execution feature
+
 
 ---
 

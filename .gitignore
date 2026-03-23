@@ -1,6 +1,9 @@
+*.pyc
+parser.out
+parsetab.py
+
 /.idea
 /__pycache__
 /tests/__pycache__
-*.pyc
 /tests/weather_shopper/screenshots
 /tests/fixtures/screenshots

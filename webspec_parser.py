@@ -373,12 +373,25 @@ def p_action_drag(p):
 
 def p_action_press_key(p):
     """action_stmt : PRESS KEY STRING"""
-    p[0] = PressKey(key=p[3], line=p.lineno(1))
+    # p[0] = PressKey(key=p[3], line=p.lineno(1))
+    p[0] = PressKey(key=p[3], modifier=None, modifiers=[], line=p.lineno(1))
 
 
 def p_action_press_key_with_modifier(p):
     """action_stmt : PRESS KEY STRING WITH STRING"""
-    p[0] = PressKey(key=p[3], modifier=p[5], line=p.lineno(1))
+    # p[0] = PressKey(key=p[3], modifier=p[5], line=p.lineno(1))
+
+    # mods = [m.strip() for m in p[5].split('+') if m.strip()]
+    # p[0] = PressKey(key=p[3], modifiers=mods, line=p.lineno(1))
+
+    raw_modifier = p[5]
+    modifiers = [m.strip() for m in raw_modifier.split("+") if m.strip()]
+    p[0] = PressKey(
+        key=p[3],
+        modifier=raw_modifier,
+        modifiers=modifiers,
+        line=p.lineno(1),
+    )
 
 
 def p_action_upload(p):

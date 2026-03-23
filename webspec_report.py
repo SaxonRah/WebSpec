@@ -82,12 +82,14 @@ def generate_report(
     result_class = 'pass' if failed == 0 else 'fail'
     result_text = 'PASSED' if failed == 0 else 'FAILED'
 
+    safe_script_name = escape(script_name, quote=True)
+
     html = f'''<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>WebSpec Report - {script_name}</title>
+<title>WebSpec Report - {safe_script_name}</title>
 <style>
 * {{ box-sizing: border-box; margin: 0; padding: 0; }}
 body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
@@ -160,7 +162,7 @@ tr:last-child td {{ border-bottom: none; }}
 <body>
 <div class="container">
     <h1>WebSpec Test Report</h1>
-    <div class="meta">Script: {script_name} &middot;
+    <div class="meta">Script: {safe_script_name} &middot;
         {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</div>
 
     <div class="result-banner {result_class}">

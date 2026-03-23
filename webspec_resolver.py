@@ -542,6 +542,33 @@ class SmartResolver:
 
         return [c for c in candidates if id(c) in valid_ids]
 
+    def _filter_spatial_real(self, candidates, sel, variables):
+        anchor_tag = self._resolve_bs4(sel.child, variables)
+        if not anchor_tag:
+            return candidates
+
+        anchor_el = self.driver.find_element(By.XPATH, self._tag_to_xpath(anchor_tag))
+        ar = anchor_el.rect
+
+        out = []
+        for cand in candidates:
+            try:
+                el = self.driver.find_element(By.XPATH, self._tag_to_xpath(cand))
+                cr = el.rect
+
+                if sel.kind == 'above' and cr['y'] + cr['height'] <= ar['y']:
+                    out.append(cand)
+                elif sel.kind == 'below' and cr['y'] >= ar['y'] + ar['height']:
+                    out.append(cand)
+                elif sel.kind == 'before' and cr['x'] + cr['width'] <= ar['x']:
+                    out.append(cand)
+                elif sel.kind == 'after' and cr['x'] >= ar['x'] + ar['width']:
+                    out.append(cand)
+            except Exception:
+                pass
+
+        return out
+
     # ── Resolve an element ref purely in BS4 ─────────────
     def _resolve_bs4(self, ref, variables) -> Optional[Tag]:
         if isinstance(ref, ElementRef):
