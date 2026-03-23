@@ -61,12 +61,19 @@ def generate_report(
 
     # Find screenshots
     screenshot_html = ''
-    if runtime.screenshot_dir.exists():
-        screenshots = sorted(runtime.screenshot_dir.glob('*.png'))
-        for ss in screenshots:
-            import base64
-            data = base64.b64encode(ss.read_bytes()).decode()
-            screenshot_html += f'''
+
+    screenshots = getattr(runtime, 'screenshots', None)
+    if screenshots:
+        screenshot_paths = [ss for ss in screenshots if ss.exists()]
+    elif getattr(runtime, 'screenshot_dir', None) and runtime.screenshot_dir.exists():
+        screenshot_paths = sorted(runtime.screenshot_dir.glob('*.png'))
+    else:
+        screenshot_paths = []
+
+    for ss in screenshot_paths:
+        import base64
+        data = base64.b64encode(ss.read_bytes()).decode()
+        screenshot_html += f'''
             <div class="screenshot">
                 <div class="screenshot-name">{ss.name}</div>
                 <img src="data:image/png;base64,{data}" />

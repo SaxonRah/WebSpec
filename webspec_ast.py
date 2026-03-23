@@ -4,7 +4,7 @@ Every grammar rule produces one of these typed nodes.
 """
 
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import Optional, Any
 
 
 # ── Base ─────────────────────────────────────────────────
@@ -94,7 +94,8 @@ class Clear(Node):
 
 @dataclass
 class Select(Node):
-    option: str = ''
+    # option: str = ''
+    option: 'Expr | str' = ''
     target: 'ElementRef | VarElementRef | RawElementRef' = None
 
 @dataclass

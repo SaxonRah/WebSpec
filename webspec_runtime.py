@@ -52,6 +52,7 @@ class WebSpecRuntime:
         self.timeout = timeout
         self.screenshot_dir = Path(screenshot_dir)
         self.screenshot_dir.mkdir(exist_ok=True)
+        self.screenshots: list[Path] = []
 
         self.resolver = SmartResolver(
             self.driver,
@@ -176,27 +177,7 @@ class WebSpecRuntime:
         return self.resolver.resolve_all(ref, self.variables)
 
     def _eval_expr(self, expr):
-        if isinstance(expr, StringLiteral):
-            return expr.value
-        if isinstance(expr, NumberLiteral):
-        # This stores raw numbers in variables
-            return expr.value
-        # This stores numbers as strings in variables
-        #     return str(expr.value)
-        if isinstance(expr, VarRef):
-            v = self.variables.get(expr.name)
-            if v is None:
-                raise RuntimeError(f"Variable ${expr.name} not set")
-            return v
-        if isinstance(expr, Concat):
-        # This stores raw numbers in variables
-        #     return self._eval_expr(expr.left) + self._eval_expr(expr.right)
-            left = self._eval_expr(expr.left)
-            right = self._eval_expr(expr.right)
-            return self._coerce_to_string(left) + self._coerce_to_string(right)
-        # This stores numbers as strings in variables
-        #     return str(self._eval_expr(expr.left)) + str(self._eval_expr(expr.right))
-        raise RuntimeError(f"Cannot evaluate expression: {expr}")
+        return self._eval_runtime_value(expr)
 
     def _current_script_dir(self) -> Path:
         if self.script_stack:
@@ -606,7 +587,9 @@ class WebSpecRuntime:
         elif n.extract == 'title':
             self.variables[n.name] = self.driver.title
         else:
-            self.variables[n.name] = self._eval_expr(n.value)
+            # self.variables[n.name] = self._eval_expr(n.value)
+            value = self._eval_runtime_value(n.value)
+            self.variables[n.name] = value
 
     # ══════════════════════════════════════════════════════
     #  Control flow
@@ -748,63 +731,44 @@ class WebSpecRuntime:
                 v = self.variables[name]
                 return "" if v is None else str(v)
 
-            resolved = re.sub(r'\$\{(\w+)\}', replace_braced, resolved)
-            resolved = re.sub(r'(?<!\$)\$(\w+)', replace_unbraced, resolved)
+            # resolved = re.sub(r'\$\{(\w+)}', replace_braced, resolved)
+            # resolved = re.sub(r'(?<!\$)\$(\w+)', replace_unbraced, resolved)
+            resolved = re.sub(r'\$\{([A-Za-z_]\w*)}', replace_braced, resolved)
+            resolved = re.sub(r'(?<!\$)\$([A-Za-z_]\w*)', replace_unbraced, resolved)
 
         return str(resolved)
 
     def _eval_runtime_value(self, value):
-        # Backward compatible:
-        # - if parser already gave us a plain Python value, keep it
-        # - if parser gave us an Expr node, evaluate it
         if isinstance(value, (str, int, float, bool)) or value is None:
             return value
 
-        # New parser path: expression AST node
-        return self._eval_expr(value)
+        if isinstance(value, StringLiteral):
+            return value.value
+
+        if isinstance(value, NumberLiteral):
+            return value.value
+
+        if isinstance(value, VarRef):
+            resolved = self.variables.get(value.name)
+            if resolved is None:
+                raise RuntimeError(f"Variable ${value.name} not set")
+            return resolved
+
+        if isinstance(value, Concat):
+            left = self._eval_runtime_value(value.left)
+            right = self._eval_runtime_value(value.right)
+            return self._coerce_to_string(left) + self._coerce_to_string(right)
+
+        raise RuntimeError(f"Cannot evaluate runtime value: {value}")
 
     # ══════════════════════════════════════════════════════
     #  Misc
     # ══════════════════════════════════════════════════════
 
-    def _exec_Import__old(self, n: Import):
-        filepath = Path(n.filepath)
-
-        # Resolve relative to the current script's directory
-        if not filepath.is_absolute():
-            # Check relative to CWD and common locations
-            candidates = [
-                filepath,
-                Path('tests/fixtures') / filepath,
-                Path('tests') / filepath,
-            ]
-            for candidate in candidates:
-                if candidate.exists():
-                    filepath = candidate
-                    break
-
-        abs_path = str(filepath.resolve())
-        if abs_path in self.imports_loaded:
-            return  # already imported, skip
-        self.imports_loaded.add(abs_path)
-
-        if not filepath.exists():
-            raise RuntimeError(f"Import file not found: {n.filepath}")
-
-        from webspec_lexer import lexer as import_lexer
-        from webspec_parser import parser as import_parser
-
-        script_text = filepath.read_text(encoding='utf-8')
-        import_lexer.lineno = 1
-        ast = import_parser.parse(script_text, lexer=import_lexer)
-
-        if ast and ast.statements:
-            self.exec_block(ast.statements)
-
     def _exec_Import(self, n: Import):
         filepath = self._resolve_runtime_path(n.filepath, allow_test_fallbacks=True)
-
         abs_path = str(filepath.resolve())
+
         if abs_path in self.imports_loaded:
             return
 
@@ -889,14 +853,14 @@ class WebSpecRuntime:
             self.variables = base_vars
 
     def _exec_Log(self, n: Log):
-        # msg = self._eval_expr(n.message)
-        msg = self._coerce_to_string(self._eval_expr(n.message))
+        msg = self._eval_text_value(n.message)
         logger.info(f"[LOG] {msg}")
 
     def _exec_TakeScreenshot(self, n: TakeScreenshot):
         name = n.filename or f"screenshot_{self.step_count}.png"
         path = self.screenshot_dir / name
         self.driver.save_screenshot(str(path))
+        self.screenshots.append(path)
         logger.info(f"Screenshot saved: {path}")
 
     def _exec_AcceptAlert(self, _):

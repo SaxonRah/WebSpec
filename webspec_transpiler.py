@@ -94,7 +94,9 @@ class WebSpecTranspiler:
         url = event.get('url', '')
         if self.last_url is None:
             self._emit(f'navigate to "{_escape(url)}"')
-            self._emit('wait 1 seconds')
+            path = self._url_path(url)
+            if path:
+                self._emit(f'wait until url contains "{_escape(path)}"')
             self._emit('')
             self.last_url = url
         elif url != self.last_url and etype != 'navigate':

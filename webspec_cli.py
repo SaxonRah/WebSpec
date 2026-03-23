@@ -74,10 +74,15 @@ def main():
         if args.base_url:
             script_text = script_text.replace('BASE_URL', args.base_url)
         else:
-            fixture_html = script_path.parent / 'test_site.html'
-            if not fixture_html.exists():
-                fixture_html = script_path.parent / 'fixtures' / 'test_site.html'
-            if fixture_html.exists():
+            fixture_candidates = [
+                script_path.parent / 'test_site.html',
+                script_path.parent / 'fixtures' / 'test_site.html',
+                Path.cwd() / 'test_site.html',
+                Path.cwd() / 'fixtures' / 'test_site.html',
+            ]
+
+            fixture_html = next((p for p in fixture_candidates if p.exists()), None)
+            if fixture_html is not None:
                 file_url = fixture_html.resolve().as_uri()
                 script_text = script_text.replace('BASE_URL', file_url)
 

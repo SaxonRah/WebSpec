@@ -225,9 +225,8 @@ Key features:
 
 - **Step timing**
   - Every step records its duration for reporting.
-- **Error accumulation**
-  - Assertion failures are collected (not just
-    thrown) so reports can show all failures.
+- **Failure recording**
+  - Assertion failures are recorded for reporting before being raised.
 - **Subroutine storage**
   - `define`/`call` store and retrieve named
     statement blocks.
@@ -460,10 +459,9 @@ the next row. Special variables `$_row_index` (0-based) and
 - **No nested expressions in assertions**
   - `verify count is 5 + 1`
     won't work. Compute the value first with `set $expected to ...`.
-- **String-only comparisons in conditions**
-  - `if $count greater than 10`
-    compares `"6" > "10"` as strings (true, because "6" > "1").
-    Extract and compare numeric strings carefully.
+- **Type-sensitive comparisons in conditions**
+  - conditions attempt numeric comparison when both sides can be interpreted as numbers;
+    otherwise they fall back to string comparison.
 - **Single-line statements**
   - No semicolons or multi-statement lines.
     Each statement must be on its own line.
