@@ -226,7 +226,7 @@ class SmartResolver:
                 return resolved.text
             return str(resolved)
 
-        value = re.sub(r'\$\{(\w+)\}', _replace_braced, value)
+        value = re.sub(r'\$\{(\w+)}', _replace_braced, value)
         value = re.sub(r'(?<!\$)\$(\w+)', _replace_unbraced, value)
         return value
 
@@ -318,10 +318,6 @@ class SmartResolver:
             return [c for c in candidates
                     if c.get(extra) == value]
 
-        # elif kind == 'placeholder':
-        #     return [c for c in candidates
-        #             if c.get('placeholder', '').lower()
-        #             == value.lower()]
         elif kind == 'placeholder':
             v = self._stringify_runtime_value(value).lower()
             return [
@@ -329,18 +325,11 @@ class SmartResolver:
                 if c.get('placeholder', '').lower() == v
             ]
 
-        # elif kind == 'value':
-        #     return [c for c in candidates
-        #             if c.get('value', '') == value]
         elif kind == 'value':
             v = self._stringify_runtime_value(value)
             return [c for c in candidates
                     if c.get('value', '') == v]
 
-        # elif kind == 'containing':
-        #     v = value.lower()
-        #     return [c for c in candidates
-        #             if v in c.get_text(strip=True).lower()]
         elif kind == 'containing':
             v = self._stringify_runtime_value(value).lower()
             return [
@@ -348,10 +337,6 @@ class SmartResolver:
                 if v in c.get_text(strip=True).lower()
             ]
 
-        # elif kind == 'matching':
-        #     pattern = re.compile(value)
-        #     return [c for c in candidates
-        #             if pattern.search(c.get_text(strip=True))]
         elif kind == 'matching':
             pattern_text = self._stringify_runtime_value(value)
             try:
@@ -364,8 +349,6 @@ class SmartResolver:
                 if pattern.search(c.get_text(strip=True))
             ]
 
-        # elif kind == 'near':
-        #     return self._filter_near_label(candidates, value)
         elif kind == 'near':
             matches = self._filter_near_label(candidates, value)
             if not matches:

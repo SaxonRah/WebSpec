@@ -355,3 +355,20 @@ class TestFullTranspilation:
     def test_empty_events(self):
         script = self.t.transpile([])
         assert 'Recording playback complete' in script
+
+    # Edge Cases
+
+    def test_captured_keypress_with_ctrl_shift_transpiles_correctly(self):
+        events = [
+            {
+                "eventType": "keypress",
+                "key": "X",
+                "ctrl": True,
+                "shift": True,
+                "alt": False,
+                "url": "https://example.com/app",
+            }
+        ]
+
+        out = WebSpecTranspiler().transpile(events)
+        assert 'press key "x" with "ctrl+shift"' in out

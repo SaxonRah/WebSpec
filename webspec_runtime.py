@@ -6,17 +6,14 @@ Walks the AST and executes each node against a live Selenium session.
 import re
 import time
 import json
-import os
 import logging
 from pathlib import Path
 from typing import Any
 
 from selenium import webdriver
-# from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.support.ui import WebDriverWait, Select as SeleniumSelect
-from selenium.webdriver.support import expected_conditions as EC
 
 from webspec_ast import *
 from webspec_resolver import SmartResolver
@@ -213,15 +210,20 @@ class WebSpecRuntime:
     #  Navigation
     # ══════════════════════════════════════════════════════
 
+    # def _exec_Navigate(self, n: Navigate):
+    #     if isinstance(n.url, str):
+    #         url = n.url
+    #         for var, val in self.variables.items():
+    #             sval = "" if val is None else str(val)
+    #             url = url.replace(f'${{{var}}}', sval)  # ${NAME}
+    #             url = url.replace(f'${var}', sval)      # $NAME
+    #     else:
+    #         # url is an Expr node from the parser
+    #         url = self._eval_expr(n.url)
+    #
+    #     self.driver.get(url)
     def _exec_Navigate(self, n: Navigate):
-        if isinstance(n.url, str):
-            url = n.url
-            for var, val in self.variables.items():
-                url = url.replace(f'${{{var}}}', str(val))
-                url = url.replace(f'${var}', str(val))
-        else:
-            # url is an Expr node from the parser
-            url = self._eval_expr(n.url)
+        url = self._eval_text_value(n.url)
         self.driver.get(url)
 
     def _exec_GoBack(self, _):
@@ -619,28 +621,21 @@ class WebSpecRuntime:
         if n.extract == 'text':
             el = self._resolve(n.target)
             self.variables[n.name] = el.text
-            # self._store_variable(n.name, el.text)
         elif n.extract == 'attr':
             el = self._resolve(n.target)
             self.variables[n.name] = el.get_attribute(n.attr_name)
-            # self._store_variable(n.name, el.get_attribute(n.attr_name))
         elif n.extract == 'value':
             el = self._resolve(n.target)
             self.variables[n.name] = el.get_attribute('value')
-            # self._store_variable(n.name, el.get_attribute('value'))
         elif n.extract == 'count':
             elements = self._resolve_all(n.target)
             self.variables[n.name] = len(elements)
-            # self._store_variable(n.name, len(elements))
         elif n.extract == 'url':
             self.variables[n.name] = self.driver.current_url
-            # self._store_variable(n.name, self.driver.current_url)
         elif n.extract == 'title':
             self.variables[n.name] = self.driver.title
-            # self._store_variable(n.name, self.driver.title)
         else:
             self.variables[n.name] = self._eval_runtime_value(n.value)
-            # self._store_variable(n.name, self._eval_runtime_value(n.value))
 
     # ══════════════════════════════════════════════════════
     #  Control flow

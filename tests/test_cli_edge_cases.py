@@ -1,13 +1,11 @@
-import sys
-from pathlib import Path
-
 import pytest
 
 import webspec_cli as cli_mod
 
 
 class DummyOptions:
-    def add_argument(self, *args, **kwargs):
+    @staticmethod
+    def add_argument(*args, **kwargs):
         return None
 
 
@@ -15,7 +13,8 @@ class FakeParserObj:
     def __init__(self, args):
         self._args = args
 
-    def add_argument(self, *args, **kwargs):
+    @staticmethod
+    def add_argument(*args, **kwargs):
         return None
 
     def parse_args(self):
@@ -43,7 +42,8 @@ class FakeRuntime:
         self.variables = {}
         self.step_count = 0
 
-    def run(self, ast):
+    @staticmethod
+    def run(ast):
         return None
 
 

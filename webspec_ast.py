@@ -4,7 +4,7 @@ Every grammar rule produces one of these typed nodes.
 """
 
 from dataclasses import dataclass, field
-from typing import Optional, Any
+from typing import Optional
 
 
 # ── Base ─────────────────────────────────────────────────
@@ -128,12 +128,6 @@ class ScrollBy(Node):
 class DragTo(Node):
     source: 'ElementRef | VarElementRef | RawElementRef' = None
     target: 'ElementRef | VarElementRef | RawElementRef' = None
-
-# @dataclass
-# class PressKey(Node):
-#     key: str = ''
-#     # modifier: Optional[str] = None
-#     modifiers: list[str] = field(default_factory=list)
 
 @dataclass
 class PressKey(Node):

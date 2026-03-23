@@ -1,7 +1,4 @@
-# tests/test_report.py
 from pathlib import Path
-
-import pytest
 
 from webspec_report import generate_report
 

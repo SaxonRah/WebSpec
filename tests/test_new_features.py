@@ -93,8 +93,8 @@ class TestDataDrivenRuntime:
 
         original_exec_log = rt._exec_Log
 
-        def capture_log(node):
-            seen.append(rt._eval_expr(node.message))
+        def capture_log(t_node):
+            seen.append(rt._eval_expr(t_node.message))
 
         rt._exec_Log = capture_log
 
@@ -127,8 +127,8 @@ class TestDataDrivenRuntime:
 
         seen = []
 
-        def capture_log(node):
-            seen.append(rt._eval_expr(node.message))
+        def capture_log(t_node):
+            seen.append(rt._eval_expr(t_node.message))
 
         rt._exec_Log = capture_log
 

@@ -32,6 +32,7 @@ def pytest_collect_file(parent, file_path):
     """Collect .ws files as test items."""
     if file_path.suffix == '.ws' and file_path.name != '__pycache__':
         return WSFile.from_parent(parent, path=file_path)
+    return None
 
 
 class WSFile(pytest.File):

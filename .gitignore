@@ -9,3 +9,5 @@ parsetab.py
 /tests/fixtures/screenshots
 mega_source.html
 mega_cookies.json
+/screenshots
+/reports

@@ -166,19 +166,19 @@ class WebSpecRecorder:
         except Exception as e:
             logger.debug(f"collect_events failed: {e}")
 
-    def collect_events(self):
-        """Pull events from the browser JS queue."""
-        try:
-            new_events = self.driver.execute_script("""
-                if (!window.__webspec_recorder || !window.__webspec_recorder.events) {
-                    return [];
-                }
-                return window.__webspec_recorder.events.splice(0);
-            """)
-            if new_events:
-                self.events.extend(new_events)
-        except Exception as e:
-            logger.debug(f"Collect events failed: {e}")
+    # def collect_events(self):
+    #     """Pull events from the browser JS queue."""
+    #     try:
+    #         new_events = self.driver.execute_script("""
+    #             if (!window.__webspec_recorder || !window.__webspec_recorder.events) {
+    #                 return [];
+    #             }
+    #             return window.__webspec_recorder.events.splice(0);
+    #         """)
+    #         if new_events:
+    #             self.events.extend(new_events)
+    #     except Exception as e:
+    #         logger.debug(f"Collect events failed: {e}")
 
     def reinject_if_needed(self):
         """Re-inject capture script after page navigation."""
@@ -264,7 +264,7 @@ def main():
     # ── Interactive mode ─────────────────────────────────
     BANNER = """
   ╔═══════════════════════════════════════════╗
-  ║        WebSpec Recorder (interactive)      ║
+  ║        WebSpec Recorder (interactive)     ║
   ║                                           ║
   ║  :start    Begin recording                ║
   ║  :stop     Stop recording                 ║

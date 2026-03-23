@@ -1,5 +1,5 @@
 # tests/test_recorder.py
-from pathlib import Path
+
 from types import SimpleNamespace
 
 import pytest
@@ -74,7 +74,8 @@ def recorder_env(monkeypatch, tmp_path):
     )
 
     class FakeTranspiler:
-        def transpile(self, events):
+        @staticmethod
+        def transpile(events):
             created.transpile_calls.append(list(events))
             return "navigate to \"https://example.com\"\nlog \"done\""
 
@@ -113,9 +114,6 @@ def test_start_sets_flags_injects_js_enables_recording_and_starts_thread(recorde
     assert webspec_recorder.JS_CAPTURE in script_texts
     assert "window.__webspec_recorder.recording = true;" in script_texts
 
-    # assert driver.scripts[0] == recorder_env.injected_js
-    # assert driver.scripts[1] == "window.__webspec_recorder.recording = true;"
-
     assert len(recorder_env.thread_instances) == 1
     thread = recorder_env.thread_instances[0]
     assert thread.target == recorder._poll_events
@@ -140,9 +138,6 @@ def test_stop_turns_off_recording_collects_remaining_events_and_joins_thread(rec
     assert recorder.recording is False
     assert recorder._stop_flag is True
 
-    # assert "window.__webspec_recorder.recording = false;" in driver.scripts
-    # assert any("splice(0)" in s for s in driver.scripts)
-
     script_texts = [s for s, _ in driver.scripts]
     assert "window.__webspec_recorder.recording = false;" in script_texts
     assert any("splice(0)" in s for s in script_texts)
@@ -151,8 +146,6 @@ def test_stop_turns_off_recording_collects_remaining_events_and_joins_thread(rec
         {"eventType": "click", "url": "https://example.com"}
     ]
 
-    # thread = recorder._poll_thread
-    # assert thread.join_calls == [2]
     if recorder._poll_thread is not None:
         assert recorder._poll_thread.join_called is True
 
@@ -164,7 +157,8 @@ def test_stop_ignores_browser_errors_when_disabling_recording(recorder_env):
     recorder.start()
 
     # Make the "recording = false" call fail.
-    # start() produces script calls 0 and 1, so this will affect the next call at index 2.
+    # start() produces script calls 0 and 1,
+    #   so this will affect the next call at index 2.
     driver.raise_on_scripts.add(2)
 
     recorder.stop()
@@ -188,16 +182,6 @@ def test_double_start_does_not_explode_and_creates_new_poll_thread(recorder_env)
     assert first_thread is not second_thread
     assert second_thread.started is True
 
-    # assert recorder.recording is True
-    # assert first_thread is not second_thread
-    # assert len(recorder_env.thread_instances) == 2
-    # assert first_thread.started is True
-    # assert second_thread.started is True
-    #
-    # # Each start injects JS and enables recording.
-    # assert driver.scripts.count(recorder_env.injected_js) == 2
-    # assert driver.scripts.count("window.__webspec_recorder.recording = true;") == 2
-
 
 def test_double_stop_does_not_explode(recorder_env):
     recorder = recorder_env.recorder
@@ -208,7 +192,8 @@ def test_double_stop_does_not_explode(recorder_env):
 
     assert recorder.recording is False
     assert recorder._stop_flag is True
-    # Both stops are allowed; join may be called more than once on the same fake thread.
+    # Both stops are allowed;
+    #   join may be called more than once on the same fake thread.
     assert recorder._poll_thread.join_calls == [2, 2]
 
 
@@ -304,11 +289,6 @@ def test_pause_and_resume_toggle_browser_recording_flag(recorder_env):
     recorder.pause()
     recorder.resume()
 
-    # assert driver.scripts == [
-    #     "window.__webspec_recorder.recording = false;",
-    #     "window.__webspec_recorder.recording = true;",
-    # ]
-
     assert [s for s, _ in driver.scripts] == [
         "window.__webspec_recorder.recording = false;",
         "window.__webspec_recorder.recording = true;",
@@ -324,9 +304,6 @@ def test_clear_resets_events_and_clears_browser_queue(recorder_env):
 
     recorder.clear()
 
-    # assert recorder.events == []
-    # assert driver.scripts == ["window.__webspec_recorder.events = [];"]
-
     assert recorder.events == []
     assert [s for s, _ in driver.scripts] == [
         "window.__webspec_recorder.events = [];"
@@ -341,9 +318,6 @@ def test_reinject_if_needed_injects_when_recorder_missing(recorder_env):
 
     recorder.reinject_if_needed()
 
-    # assert driver.scripts[0] == "return !!window.__webspec_recorder;"
-    # assert driver.scripts[1] == recorder_env.injected_js
-
     script_texts = [s for s, _ in driver.scripts]
     assert script_texts[0] == "return !!window.__webspec_recorder;"
     assert webspec_recorder.JS_CAPTURE in script_texts
@@ -357,7 +331,6 @@ def test_reinject_if_needed_does_nothing_when_recorder_present(recorder_env):
 
     recorder.reinject_if_needed()
 
-    # assert driver.scripts == ["return !!window.__webspec_recorder;"]
     assert [s for s, _ in driver.scripts] == [
         "return !!window.__webspec_recorder;"
     ]
@@ -370,8 +343,6 @@ def test_reinject_if_needed_swallows_driver_errors(recorder_env):
     driver.result_by_substring["return !!window.__webspec_recorder;"] = RuntimeError("navigation race")
 
     recorder.reinject_if_needed()
-
-    # assert driver.scripts == ["return !!window.__webspec_recorder;"]
 
     assert [s for s, _ in driver.scripts] == [
         "return !!window.__webspec_recorder;"
