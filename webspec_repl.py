@@ -5,14 +5,18 @@ Type WebSpec commands one at a time against a live browser.
 
 # import sys
 import logging
-# import readline  # enables arrow keys, history
+
+try:
+    import readline  # enables arrow-key history and line editing
+except ImportError:
+    pass  # readline not available (some Windows installs)
+
 from pathlib import Path
 
 from selenium import webdriver
 
 from webspec_lexer import lexer
 from webspec_parser import parser
-# from webspec_ast import Program
 from webspec_runtime import WebSpecRuntime
 
 
@@ -24,7 +28,7 @@ logger = logging.getLogger('webspec.repl')
 
 BANNER = """
 ╔══════════════════════════════════════════╗
-║          WebSpec Interactive REPL         ║
+║          WebSpec Interactive REPL        ║
 ║  Type commands one line at a time.       ║
 ║  Multi-line: end with \\ then continue.  ║
 ║  Commands: :help :vars :quit :screenshot ║

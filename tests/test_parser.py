@@ -751,6 +751,21 @@ click the button "Submit"
         assert isinstance(stmts[0], Navigate)
         assert isinstance(stmts[1], Click)
 
+    def test_setvar_to_execute_js(self):
+        script = '''navigate to "https://example.com"
+set $title to execute "document.title"
+
+set $count to execute "document.querySelectorAll('.item').length"
+
+log "Title: " + $title'''
+        prog = parse(script)
+        stmts = [s for s in prog.statements if s is not None]
+        assert len(stmts) == 4
+        assert isinstance(stmts[0], Navigate)
+        assert isinstance(stmts[1], SetVar)
+        assert isinstance(stmts[2], SetVar)
+        assert isinstance(stmts[3], Log)
+
 class TestVariablesInSelectors:
     def test_containing_variable(self):
         node = parse_one('click the heading containing $title')

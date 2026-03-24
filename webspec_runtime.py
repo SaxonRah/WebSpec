@@ -64,7 +64,7 @@ class WebSpecRuntime:
         self.step_timings: list[dict] = []  # for reporting
         self.imports_loaded: set[str] = set()  # for import system
 
-        self.script_stack: list[Path] = []
+        self.script_stack: list[Path] = [Path.cwd()]  # default to cwd
         self.row_failure_mode = row_failure_mode  # "fail_fast" or "collect"
 
 
@@ -90,27 +90,60 @@ class WebSpecRuntime:
                 f"{len(self.errors)} errors"
             )
 
+    # def run_script(self, script_text: str, source_path: str | None = None):
+    #     """Parse and run a WebSpec script string."""
+    #     from webspec_parser import parser as ply_parser
+    #     from webspec_lexer import lexer
+    #     lexer.lineno = 1
+    #     if source_path is not None:
+    #         self.script_stack.append(Path(source_path).resolve().parent)
+    #     try:
+    #         ast = ply_parser.parse(script_text, lexer=lexer)
+    #         self.run(ast)
+    #     finally:
+    #         if source_path is not None:
+    #             self.script_stack.pop()
+
     def run_script(self, script_text: str, source_path: str | None = None):
-        """Parse and run a WebSpec script string."""
-        from webspec_parser import parser as ply_parser
-        from webspec_lexer import lexer
-        lexer.lineno = 1
+        from webspec_lexer import make_lexer
+        from webspec_parser import make_parser
+        fresh_lexer = make_lexer()
+        fresh_parser = make_parser()
+        fresh_lexer.lineno = 1
+
         if source_path is not None:
             self.script_stack.append(Path(source_path).resolve().parent)
         try:
-            ast = ply_parser.parse(script_text, lexer=lexer)
+            ast = fresh_parser.parse(script_text, lexer=fresh_lexer)
             self.run(ast)
         finally:
             if source_path is not None:
                 self.script_stack.pop()
 
+    # def _interpolate(self, value):
+    #     """Replace ${varname} in assertion expected values."""
+    #     import re
+    #     if '${' not in value:
+    #         return value
+    #
+    #     def _replace(match):
+    #         name = match.group(1)
+    #         resolved = self.variables.get(name)
+    #         if resolved is None:
+    #             raise RuntimeError(f"Variable ${name} not set")
+    #         if hasattr(resolved, 'text'):
+    #             return resolved.text
+    #         return str(resolved)
+    #
+    #     return re.sub(r'\$\{(\w+)}', _replace, value)
+
     def _interpolate(self, value):
-        """Replace ${varname} in assertion expected values."""
+        """Replace $varname and ${varname} in assertion expected values."""
         import re
-        if '${' not in value:
+        if '$' not in value:
             return value
 
-        def _replace(match):
+        def _replace_braced(match):
             name = match.group(1)
             resolved = self.variables.get(name)
             if resolved is None:
@@ -119,7 +152,18 @@ class WebSpecRuntime:
                 return resolved.text
             return str(resolved)
 
-        return re.sub(r'\$\{(\w+)}', _replace, value)
+        def _replace_unbraced(match):
+            name = match.group(1)
+            resolved = self.variables.get(name)
+            if resolved is None:
+                raise RuntimeError(f"Variable ${name} not set")
+            if hasattr(resolved, 'text'):
+                return resolved.text
+            return str(resolved)
+
+        value = re.sub(r'\$\{([A-Za-z_]\w*)}', _replace_braced, value)
+        value = re.sub(r'(?<!\$)\$([A-Za-z_]\w*)', _replace_unbraced, value)
+        return value
 
     @staticmethod
     def _coerce_to_string(value):
@@ -182,29 +226,45 @@ class WebSpecRuntime:
             return self.script_stack[-1]
         return Path.cwd()
 
-    def _resolve_runtime_path(self, raw_path: str, *, allow_test_fallbacks: bool = True) -> Path:
-        path = Path(raw_path)
+    # def _resolve_runtime_path(self, raw_path: str, *, allow_test_fallbacks: bool = True) -> Path:
+    #     path = Path(raw_path)
+    #     if path.is_absolute():
+    #         return path
+    #     candidates = [
+    #         self._current_script_dir() / path,
+    #         Path.cwd() / path,
+    #     ]
+    #     if allow_test_fallbacks:
+    #         candidates.extend([
+    #             Path('tests/fixtures') / path,
+    #             Path('tests') / path,
+    #         ])
+    #     for candidate in candidates:
+    #         if candidate.exists():
+    #             return candidate.resolve()
+    #     # Return the most natural failure path for error messages
+    #     return (self._current_script_dir() / path).resolve()
 
-        if path.is_absolute():
-            return path
+    def _resolve_runtime_path(self, raw_path, allow_test_fallbacks=False):
+        """Resolve a relative path against the current script's directory."""
+        p = Path(raw_path)
+        if p.is_absolute():
+            return p
 
-        candidates = [
-            self._current_script_dir() / path,
-            Path.cwd() / path,
-        ]
+        # Try script stack (most recent first)
+        for base in reversed(self.script_stack):
+            candidate = base / p
+            if candidate.exists():
+                return candidate
 
         if allow_test_fallbacks:
-            candidates.extend([
-                Path('tests/fixtures') / path,
-                Path('tests') / path,
-            ])
-
-        for candidate in candidates:
+            # Try cwd as final fallback
+            candidate = Path.cwd() / p
             if candidate.exists():
-                return candidate.resolve()
+                return candidate
 
-        # Return the most natural failure path for error messages
-        return (self._current_script_dir() / path).resolve()
+        # Return relative to top of stack so the error message is useful
+        return self.script_stack[-1] / p if self.script_stack else p
 
     # ══════════════════════════════════════════════════════
     #  Navigation
@@ -634,6 +694,10 @@ class WebSpecRuntime:
             self.variables[n.name] = self.driver.current_url
         elif n.extract == 'title':
             self.variables[n.name] = self.driver.title
+        elif n.extract == "js":
+            js_code = self._resolve_value(n.value)
+            result = self.driver.execute_script(f"return {js_code}")
+            self.variables[n.name] = result
         else:
             self.variables[n.name] = self._eval_runtime_value(n.value)
 
@@ -822,10 +886,10 @@ class WebSpecRuntime:
             return value.value
 
         if isinstance(value, VarRef):
-            resolved = self.variables.get(value.name)
-            if resolved is None:
+            resolved = self.variables.get(value.name, _MISSING)
+            if resolved is _MISSING:
                 raise RuntimeError(f"Variable ${value.name} not set")
-            return resolved
+            return resolved  # allow None through — it means "set but empty"
 
         if isinstance(value, Concat):
             left = self._eval_runtime_value(value.left)
@@ -837,6 +901,32 @@ class WebSpecRuntime:
     # ══════════════════════════════════════════════════════
     #  Misc
     # ══════════════════════════════════════════════════════
+
+    # def _exec_Import(self, n: Import):
+    #     filepath = self._resolve_runtime_path(n.filepath, allow_test_fallbacks=True)
+    #     abs_path = str(filepath.resolve())
+    #
+    #     if abs_path in self.imports_loaded:
+    #         return
+    #
+    #     if not filepath.exists():
+    #         raise RuntimeError(f"Import file not found: {n.filepath}")
+    #
+    #     self.imports_loaded.add(abs_path)
+    #
+    #     from webspec_lexer import lexer as import_lexer
+    #     from webspec_parser import parser as import_parser
+    #
+    #     script_text = filepath.read_text(encoding='utf-8')
+    #     import_lexer.lineno = 1
+    #     ast = import_parser.parse(script_text, lexer=import_lexer)
+    #
+    #     self.script_stack.append(filepath.parent)
+    #     try:
+    #         if ast and ast.statements:
+    #             self.exec_block(ast.statements)
+    #     finally:
+    #         self.script_stack.pop()
 
     def _exec_Import(self, n: Import):
         filepath = self._resolve_runtime_path(n.filepath, allow_test_fallbacks=True)
@@ -850,17 +940,19 @@ class WebSpecRuntime:
 
         self.imports_loaded.add(abs_path)
 
-        from webspec_lexer import lexer as import_lexer
-        from webspec_parser import parser as import_parser
+        from webspec_lexer import make_lexer
+        from webspec_parser import make_parser
+
+        import_lexer = make_lexer()
+        import_parser = make_parser()
 
         script_text = filepath.read_text(encoding='utf-8')
         import_lexer.lineno = 1
         ast = import_parser.parse(script_text, lexer=import_lexer)
 
-        self.script_stack.append(filepath.parent)
+        self.script_stack.append(filepath.resolve().parent)
         try:
-            if ast and ast.statements:
-                self.exec_block(ast.statements)
+            self.exec_block(ast.statements)
         finally:
             self.script_stack.pop()
 

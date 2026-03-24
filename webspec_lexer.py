@@ -85,10 +85,20 @@ t_LPAREN = r'\('
 t_RPAREN = r'\)'
 
 # ── Ordinals: 1st, 2nd, 3rd, 4th ... ────────────────────
+# def t_ORDINAL(t):
+#     r'\d+(st|nd|rd|th)'
+#     t.value = int(t.value[:-2])  # strip suffix, keep int
+#     return t
 def t_ORDINAL(t):
     r'\d+(st|nd|rd|th)'
-    t.value = int(t.value[:-2])  # strip suffix, keep int
+    value = int(t.value[:-2])
+    if value == 0:
+        raise SyntaxError(
+            f"Invalid ordinal '0' at line {t.lexer.lineno} — ordinals start at 1"
+        )
+    t.value = value
     return t
+
 
 # ── Numbers ──────────────────────────────────────────────
 def t_NUMBER(t):
@@ -144,4 +154,8 @@ def t_error(t):
         f"Unexpected character '{t.value[0]}' at line {t.lexer.lineno}"
     )
 
-lexer = lex.lex()
+def make_lexer():
+    """Return a brand-new lexer instance with independent state."""
+    return lex.lex()
+lexer = make_lexer()
+# lexer = lex.lex()

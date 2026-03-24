@@ -14,10 +14,15 @@ import re
 import time
 from difflib import SequenceMatcher
 from typing import Optional
+import hashlib
 from bs4 import BeautifulSoup, Tag
 from selenium.webdriver.common.by import By
+import logging
+
 
 from webspec_ast import ElementRef, RawElementRef, VarElementRef, Selector, VarRef, NumberLiteral, StringLiteral
+
+logger = logging.getLogger('webspec.resolver')
 
 # ── Tag mapping: DSL element type → HTML tags ────────────
 ELEMENT_TYPE_TAGS = {
@@ -54,42 +59,115 @@ class SmartResolver:
         self.retry_interval = retry_interval
 
     # ── Refresh the BS4 tree if the page changed ────────
+    # def _refresh_soup(self):
+    #     src = self.driver.page_source
+    #     h = hash(src)
+    #     if h != self._source_hash:
+    #         self._soup = BeautifulSoup(src, 'html.parser')
+    #         self._source_hash = h
+
     def _refresh_soup(self):
         src = self.driver.page_source
-        h = hash(src)
+        h = hashlib.md5(src.encode('utf-8', errors='replace')).hexdigest()
         if h != self._source_hash:
             self._soup = BeautifulSoup(src, 'html.parser')
             self._source_hash = h
 
     # ── Public entry point ───────────────────────────────
-    def resolve(self, ref, variables=None):
-        """
-        Given an ElementRef, resolve with automatic retry.
-        Retries on failure with a fresh DOM parse each attempt.
-        """
-        import time
+    # def resolve(self, ref, variables=None):
+    #     """
+    #     Given an ElementRef, resolve with automatic retry.
+    #     Retries on failure with a fresh DOM parse each attempt.
+    #     """
+    #     import time
+    #
+    #     variables = variables or {}
+    #
+    #     if isinstance(ref, RawElementRef):
+    #         return self._resolve_raw(ref.locator)
+    #
+    #     # if isinstance(ref, VarElementRef):
+    #     #     stored = variables.get(ref.var_name)
+    #     #     if stored is None:
+    #     #         raise RuntimeError(f"Variable ${ref.var_name} is not set")
+    #     #     return stored
+    #
+    #     if isinstance(ref, VarElementRef):
+    #         stored = variables.get(ref.var_name)
+    #         if stored is None:
+    #             raise RuntimeError(f"Variable ${ref.var_name} is not set")
+    #
+    #         if isinstance(stored, (list, tuple)):
+    #             if not stored:
+    #                 raise RuntimeError(f"Variable ${ref.var_name} is empty")
+    #             stored = stored[0]
+    #
+    #         if not (hasattr(stored, "click") or hasattr(stored, "tag_name")):
+    #             raise RuntimeError(
+    #                 f"Variable ${ref.var_name} does not contain an element"
+    #             )
+    #         return stored
+    #
+    #     deadline = time.time() + self.retry_timeout
+    #     # last_error = None
+    #
+    #     while True:
+    #         try:
+    #             # self._refresh_soup(force=(last_error is not None)) ???
+    #             self._refresh_soup()
+    #             candidates = self._get_candidates(ref.elem_type)
+    #             candidates = self._apply_selectors(
+    #                 candidates, ref.selectors, variables)
+    #
+    #             if not candidates:
+    #                 raise RuntimeError(
+    #                     f"No element found for: the {ref.elem_type} "
+    #                     f"with {len(ref.selectors)} selector(s)"
+    #                 )
+    #
+    #             # idx = (ref.ordinal or 1) - 1
+    #             # if idx >= len(candidates):
+    #             #     raise RuntimeError(
+    #             #         f"Requested {ref.ordinal}th match but only "
+    #             #         f"{len(candidates)} found"
+    #             #     )
+    #
+    #             idx = 0 if ref.ordinal is None else ref.ordinal - 1
+    #             if idx < 0:
+    #                 raise RuntimeError(
+    #                     f"Ordinal must be >= 1, got {ref.ordinal}"
+    #                 )
+    #             if idx >= len(candidates):
+    #                 raise RuntimeError(
+    #                     f"Requested {ref.ordinal}th match but only "
+    #                     f"{len(candidates)} found"
+    #                 )
+    #
+    #             chosen = candidates[idx]
+    #             xpath = self._tag_to_xpath(chosen)
+    #             return self.driver.find_element(By.XPATH, xpath)
+    #
+    #         except Exception: # as e:
+    #             # last_error = e
+    #             if time.time() >= deadline:
+    #                 raise
+    #             time.sleep(self.retry_interval)
 
+
+    def resolve(self, ref, variables=None):
         variables = variables or {}
 
         if isinstance(ref, RawElementRef):
             return self._resolve_raw(ref.locator)
 
-        # if isinstance(ref, VarElementRef):
-        #     stored = variables.get(ref.var_name)
-        #     if stored is None:
-        #         raise RuntimeError(f"Variable ${ref.var_name} is not set")
-        #     return stored
-
         if isinstance(ref, VarElementRef):
             stored = variables.get(ref.var_name)
             if stored is None:
                 raise RuntimeError(f"Variable ${ref.var_name} is not set")
-
             if isinstance(stored, (list, tuple)):
                 if not stored:
                     raise RuntimeError(f"Variable ${ref.var_name} is empty")
                 stored = stored[0]
-
             if not (hasattr(stored, "click") or hasattr(stored, "tag_name")):
                 raise RuntimeError(
                     f"Variable ${ref.var_name} does not contain an element"
@@ -97,11 +175,15 @@ class SmartResolver:
             return stored
 
         deadline = time.time() + self.retry_timeout
-        # last_error = None
+        last_error = None
+        attempts = 0
 
         while True:
             try:
-                # self._refresh_soup(force=(last_error is not None)) ???
+                # Raw refs now get retry too
+                if isinstance(ref, RawElementRef):
+                    return self._resolve_raw(ref.locator)
+
                 self._refresh_soup()
                 candidates = self._get_candidates(ref.elem_type)
                 candidates = self._apply_selectors(
@@ -113,7 +195,7 @@ class SmartResolver:
                         f"with {len(ref.selectors)} selector(s)"
                     )
 
-                idx = (ref.ordinal or 1) - 1
+                idx = 0 if ref.ordinal is None else ref.ordinal - 1
                 if idx >= len(candidates):
                     raise RuntimeError(
                         f"Requested {ref.ordinal}th match but only "
@@ -124,11 +206,16 @@ class SmartResolver:
                 xpath = self._tag_to_xpath(chosen)
                 return self.driver.find_element(By.XPATH, xpath)
 
-            except Exception: # as e:
-                # last_error = e
+            except Exception as e:
+                last_error = e
+                attempts += 1
                 if time.time() >= deadline:
-                    raise
+                    logger.debug(
+                        f"Resolve failed after {attempts} attempts: {last_error}"
+                    )
+                    raise last_error
                 time.sleep(self.retry_interval)
+
 
     def resolve_all(self, ref, variables=None):
         """Return ALL matching elements as Selenium WebElements."""

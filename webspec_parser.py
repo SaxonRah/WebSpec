@@ -600,6 +600,9 @@ def p_var_set_expr(p):
     """var_stmt : SET VARIABLE TO expr"""
     p[0] = SetVar(name=p[2], value=p[4], line=p.lineno(1))
 
+def p_var_set_execute(p):
+    """var_stmt : SET VARIABLE TO EXECUTE expr"""
+    p[0] = SetVar(name=p[2], extract="js", value=p[5], line=p.lineno(1))
 
 def p_var_set_text_of(p):
     """var_stmt : SET VARIABLE TO TEXT OF element_ref"""
@@ -877,4 +880,8 @@ def p_error(p):
     raise SyntaxError("Unexpected end of input")
 
 
-parser = yacc.yacc()
+def make_parser():
+    """Return a brand-new parser instance with independent state."""
+    return yacc.yacc(debug=False, write_tables=False)
+parser = make_parser()
+# parser = yacc.yacc()
