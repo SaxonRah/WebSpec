@@ -39,3 +39,4 @@ tests/fixtures/screenshots/
 
 # VS Code extension build output
 webspec-vscode/*.vsix
+uv.lock

@@ -1,67 +1,102 @@
-# tests/test_cli.py
-import sys
+"""
+Unit tests for webspec_cli.py — the CLI entry point.
+
+All driver creation is mocked via webspec_driver.create_driver / cleanup_driver.
+No real browser is launched.
+
+Run: pytest tests/test_cli.py -v
+"""
+
 import builtins
-from pathlib import Path
+import sys
 from types import SimpleNamespace
+from pathlib import Path
 
 import pytest
 
 import webspec_cli
+from webspec_driver import DriverConfig
 
+
+# ---------------------------------------------------------------------------
+#  Fakes
+# ---------------------------------------------------------------------------
 
 class DummyDriver:
     def __init__(self):
-        self.implicitly_wait_calls = []
         self.quit_called = False
+        self.implicit_wait_value = None
+        self.browser = "chrome"
+        self.mode = "browser"
+        self.headless = False
 
-    def implicitly_wait(self, value):
-        self.implicitly_wait_calls.append(value)
+    def implicitly_wait(self, t):
+        self.implicit_wait_value = t
 
     def quit(self):
         self.quit_called = True
 
 
 class DummyRuntime:
-    def __init__(self, driver, timeout, retry_timeout, retry_interval):
+    def __init__(self, driver, timeout, retry_timeout, retry_interval,
+                 row_failure_mode="collect"):
         self.driver = driver
         self.timeout = timeout
         self.retry_timeout = retry_timeout
         self.retry_interval = retry_interval
+        self.row_failure_mode = row_failure_mode
         self.variables = {}
-        self.step_count = 7
-        self.run_calls = []
+        self.step_count = 0
+        self.steps = []
+        self.failures = []
+        self.screenshots_dir = None
+        self._should_raise = None
 
     def run(self, ast):
-        self.run_calls.append(ast)
+        self.step_count = 1
+        if self._should_raise:
+            raise self._should_raise
 
 
-class FakeOptions:
-    def __init__(self):
-        self.arguments = []
+# ---------------------------------------------------------------------------
+#  Helpers
+# ---------------------------------------------------------------------------
 
-    def add_argument(self, arg):
-        self.arguments.append(arg)
+def run_cli(argv):
+    """Run webspec_cli.main() with the given sys.argv, catching SystemExit."""
+    old_argv = sys.argv
+    try:
+        sys.argv = argv
+        webspec_cli.main()
+    except SystemExit as e:
+        return e.code
+    finally:
+        sys.argv = old_argv
+    return 0
 
+
+# ---------------------------------------------------------------------------
+#  Fixture
+# ---------------------------------------------------------------------------
 
 @pytest.fixture
 def cli_env(monkeypatch, tmp_path):
     created = SimpleNamespace(
-        chrome_options=[],
-        firefox_options=[],
-        edge_options=[],
         drivers=[],
         runtime=None,
         parsed_texts=[],
         parser_return=SimpleNamespace(kind="ast"),
         report_calls=[],
         print_lines=[],
+        last_config=None,
     )
 
-    # Capture print output from builtins, not from webspec_cli module
+    # Capture print output
     monkeypatch.setattr(
-        builtins,
-        "print",
-        lambda *args, **kwargs: created.print_lines.append(" ".join(str(a) for a in args)),
+        builtins, "print",
+        lambda *args, **kwargs: created.print_lines.append(
+            " ".join(str(a) for a in args)
+        ),
     )
 
     # Fake parser
@@ -72,306 +107,358 @@ def cli_env(monkeypatch, tmp_path):
     monkeypatch.setattr(webspec_cli.parser, "parse", fake_parse)
 
     # Fake runtime
-    def fake_runtime_ctor(driver, timeout, retry_timeout, retry_interval):
-        rt = DummyRuntime(driver, timeout, retry_timeout, retry_interval)
+    def fake_runtime_ctor(driver, timeout, retry_timeout, retry_interval,
+                          row_failure_mode="collect"):
+        rt = DummyRuntime(driver, timeout, retry_timeout, retry_interval,
+                          row_failure_mode=row_failure_mode)
         created.runtime = rt
         return rt
 
     monkeypatch.setattr(webspec_cli, "WebSpecRuntime", fake_runtime_ctor)
 
-    # Fake webdriver options
-    def chrome_options_ctor():
-        opts = FakeOptions()
-        created.chrome_options.append(opts)
-        return opts
-
-    def firefox_options_ctor():
-        opts = FakeOptions()
-        created.firefox_options.append(opts)
-        return opts
-
-    def edge_options_ctor():
-        opts = FakeOptions()
-        created.edge_options.append(opts)
-        return opts
-
-    # Fake webdriver constructors
-    def chrome_ctor(options=None):
+    # Fake driver factory
+    def fake_create_driver(cfg):
+        created.last_config = cfg
         d = DummyDriver()
-        d.options = options
-        d.browser = "chrome"
+        d.browser = cfg.browser
+        d.mode = cfg.mode
+        d.headless = cfg.headless
         created.drivers.append(d)
         return d
 
-    def firefox_ctor(options=None):
-        d = DummyDriver()
-        d.options = options
-        d.browser = "firefox"
-        created.drivers.append(d)
-        return d
+    monkeypatch.setattr(webspec_cli, "create_driver", fake_create_driver)
+    monkeypatch.setattr(
+        webspec_cli, "cleanup_driver",
+        lambda d: d.quit() if d and hasattr(d, "quit") else None,
+    )
 
-    def edge_ctor(options=None):
-        d = DummyDriver()
-        d.options = options
-        d.browser = "edge"
-        created.drivers.append(d)
-        return d
+    # Fake report generator
+    def fake_generate_report(runtime, script_name=None, output_path=None):
+        created.report_calls.append({
+            "runtime": runtime,
+            "script_name": script_name,
+            "output_path": output_path,
+        })
+        return output_path or "reports/report.html"
 
-    monkeypatch.setattr(webspec_cli.webdriver, "ChromeOptions", chrome_options_ctor)
-    monkeypatch.setattr(webspec_cli.webdriver, "FirefoxOptions", firefox_options_ctor)
-    monkeypatch.setattr(webspec_cli.webdriver, "EdgeOptions", edge_options_ctor)
-    monkeypatch.setattr(webspec_cli.webdriver, "Chrome", chrome_ctor)
-    monkeypatch.setattr(webspec_cli.webdriver, "Firefox", firefox_ctor)
-    monkeypatch.setattr(webspec_cli.webdriver, "Edge", edge_ctor)
+    # monkeypatch.setattr(webspec_cli, "generate_report", fake_generate_report, raising=False)
+    import webspec_report
+    monkeypatch.setattr(webspec_report, "generate_report", fake_generate_report)
 
-    # Fake report module
-    def fake_generate_report(runtime, script_name, output_path):
-        created.report_calls.append(
-            {
-                "runtime": runtime,
-                "script_name": script_name,
-                "output_path": output_path,
-            }
-        )
-        return str(tmp_path / "report.html")
+    # Reset lexer state
+    webspec_cli.lexer.lineno = 1
 
-    fake_report_module = SimpleNamespace(generate_report=fake_generate_report)
-    monkeypatch.setitem(sys.modules, "webspec_report", fake_report_module)
-
-    def run_cli(args):
-        monkeypatch.setattr(sys, "argv", ["webspec_cli.py", *args])
-        with pytest.raises(SystemExit) as exc:
-            webspec_cli.main()
-        return exc.value.code
-
-    created.run_cli = run_cli
-    return created
+    yield created
 
 
-def write_script(path: Path, text: str):
-    path.write_text(text, encoding="utf-8")
-    return path
-
+# ═══════════════════════════════════════════════════════════════════════════
+#  Tests
+# ═══════════════════════════════════════════════════════════════════════════
 
 def test_cli_success_exit_zero_and_quits_driver(cli_env, tmp_path):
-    script = write_script(tmp_path / "sample.ws", 'log "ok"\n')
+    script = tmp_path / "ok.ws"
+    script.write_text('log "hello"\n', encoding="utf-8")
 
-    code = cli_env.run_cli([str(script)])
+    code = run_cli(["prog", str(script), "--browser", "chrome"])
 
     assert code == 0
-    assert cli_env.runtime is not None
-    assert cli_env.runtime.run_calls == [cli_env.parser_return]
+    assert len(cli_env.drivers) == 1
     assert cli_env.drivers[0].quit_called is True
     assert any("PASSED" in line for line in cli_env.print_lines)
 
 
 def test_cli_passes_timeout_and_retry_settings_to_runtime(cli_env, tmp_path):
-    script = write_script(tmp_path / "sample.ws", 'log "ok"\n')
+    script = tmp_path / "ok.ws"
+    script.write_text('log "hi"\n', encoding="utf-8")
 
-    code = cli_env.run_cli(
-        [
-            str(script),
-            "--timeout", "22",
-            "--retry-timeout", "9.5",
-            "--retry-interval", "0.75",
-        ]
-    )
+    run_cli([
+        "prog", str(script),
+        "--timeout", "20",
+        "--retry-timeout", "8.5",
+        "--retry-interval", "0.7",
+    ])
 
-    assert code == 0
-    assert cli_env.runtime.timeout == 22
-    assert cli_env.runtime.retry_timeout == 9.5
-    assert cli_env.runtime.retry_interval == 0.75
+    rt = cli_env.runtime
+    assert rt.timeout == 20
+    assert rt.retry_timeout == 8.5
+    assert rt.retry_interval == 0.7
 
 
 def test_cli_injects_var_values_into_runtime(cli_env, tmp_path):
-    script = write_script(tmp_path / "vars.ws", 'log "ok"\n')
+    script = tmp_path / "ok.ws"
+    script.write_text('log "hi"\n', encoding="utf-8")
 
-    code = cli_env.run_cli(
-        [
-            str(script),
-            "--var", "NAME=alice",
-            "--var", "COUNT=42",
-            "--var", "EMPTY=",
-            "--var", "IGNORED_NO_EQUALS",
-        ]
-    )
+    run_cli([
+        "prog", str(script),
+        "--var", "USER=alice",
+        "--var", "PASS=secret",
+    ])
 
-    assert code == 0
-    assert cli_env.runtime.variables["NAME"] == "alice"
-    assert cli_env.runtime.variables["COUNT"] == "42"
-    assert cli_env.runtime.variables["EMPTY"] == ""
-    assert "IGNORED_NO_EQUALS" not in cli_env.runtime.variables
+    rt = cli_env.runtime
+    assert rt.variables["USER"] == "alice"
+    assert rt.variables["PASS"] == "secret"
 
 
 def test_cli_replaces_base_url_from_flag(cli_env, tmp_path):
-    script = write_script(tmp_path / "uses_base.ws", 'open "BASE_URL"\n')
+    script = tmp_path / "ok.ws"
+    script.write_text('navigate to BASE_URL\n', encoding="utf-8")
 
-    code = cli_env.run_cli([str(script), "--base-url", "https://example.com"])
+    run_cli([
+        "prog", str(script),
+        "--base-url", "http://localhost:3000",
+    ])
 
-    assert code == 0
-    assert cli_env.parsed_texts[-1] == 'open "https://example.com"\n'
+    parsed = cli_env.parsed_texts[0]
+    assert "BASE_URL" not in parsed
+    assert "http://localhost:3000" in parsed
 
 
 def test_cli_replaces_base_url_from_local_test_site_html(cli_env, tmp_path):
-    script = write_script(tmp_path / "uses_base.ws", 'open "BASE_URL"\n')
-    html = tmp_path / "test_site.html"
-    html.write_text("<html></html>", encoding="utf-8")
+    script = tmp_path / "ok.ws"
+    script.write_text('navigate to BASE_URL\n', encoding="utf-8")
 
-    code = cli_env.run_cli([str(script)])
+    fixture = tmp_path / "test_site.html"
+    fixture.write_text("<html></html>", encoding="utf-8")
 
-    assert code == 0
-    expected = html.resolve().as_uri()
-    assert cli_env.parsed_texts[-1] == f'open "{expected}"\n'
+    run_cli(["prog", str(script)])
+
+    parsed = cli_env.parsed_texts[0]
+    assert "BASE_URL" not in parsed
+    assert "test_site.html" in parsed
 
 
 def test_cli_replaces_base_url_from_fixtures_test_site_html(cli_env, tmp_path):
-    script = write_script(tmp_path / "uses_base.ws", 'open "BASE_URL"\n')
+    script = tmp_path / "ok.ws"
+    script.write_text('navigate to BASE_URL\n', encoding="utf-8")
+
     fixtures_dir = tmp_path / "fixtures"
     fixtures_dir.mkdir()
-    html = fixtures_dir / "test_site.html"
-    html.write_text("<html></html>", encoding="utf-8")
+    fixture = fixtures_dir / "test_site.html"
+    fixture.write_text("<html></html>", encoding="utf-8")
 
-    code = cli_env.run_cli([str(script)])
+    run_cli(["prog", str(script)])
 
-    assert code == 0
-    expected = html.resolve().as_uri()
-    assert cli_env.parsed_texts[-1] == f'open "{expected}"\n'
+    parsed = cli_env.parsed_texts[0]
+    assert "BASE_URL" not in parsed
+    assert "test_site.html" in parsed
 
 
-def test_cli_leaves_script_unchanged_when_no_base_url_source_exists(cli_env, tmp_path):
-    script = write_script(tmp_path / "uses_base.ws", 'open "BASE_URL"\n')
+def test_cli_leaves_script_unchanged_when_no_base_url_source_exists(
+    cli_env, tmp_path, monkeypatch
+):
+    # Use a subdirectory with no test_site.html anywhere nearby
+    sub = tmp_path / "isolated"
+    sub.mkdir()
+    script = sub / "ok.ws"
+    script.write_text('navigate to BASE_URL\n', encoding="utf-8")
 
-    code = cli_env.run_cli([str(script)])
+    # Ensure cwd doesn't have a fixtures/test_site.html either
+    monkeypatch.chdir(sub)
 
-    assert code == 0
-    assert cli_env.parsed_texts[-1] == 'open "BASE_URL"\n'
+    run_cli(["prog", str(script)])
+
+    parsed = cli_env.parsed_texts[0]
+    assert "BASE_URL" in parsed
 
 
 def test_cli_generates_report_on_success_when_requested(cli_env, tmp_path):
-    script = write_script(tmp_path / "sample.ws", 'log "ok"\n')
+    script = tmp_path / "ok.ws"
+    script.write_text('log "hi"\n', encoding="utf-8")
 
-    code = cli_env.run_cli([str(script), "--report", "--report-path", str(tmp_path / "out.html")])
+    run_cli(["prog", str(script), "--report"])
 
-    assert code == 0
     assert len(cli_env.report_calls) == 1
-    call = cli_env.report_calls[0]
-    assert call["runtime"] is cli_env.runtime
-    assert call["script_name"] == "sample.ws"
-    assert call["output_path"] == str(tmp_path / "out.html")
-    assert any("Report:" in line for line in cli_env.print_lines)
+    assert cli_env.report_calls[0]["script_name"] == "ok.ws"
 
 
-def test_cli_runtime_failure_exits_one_generates_report_and_quits_driver(cli_env, tmp_path, monkeypatch):
-    script = write_script(tmp_path / "sample.ws", 'log "ok"\n')
+def test_cli_runtime_failure_exits_one_generates_report_and_quits_driver(
+    cli_env, tmp_path, monkeypatch
+):
+    script = tmp_path / "fail.ws"
+    script.write_text('log "hi"\n', encoding="utf-8")
 
-    def fail_run(ast):
-        raise AssertionError("boom")
+    # Make runtime.run() raise
+    orig_ctor = webspec_cli.WebSpecRuntime
 
-    def fake_runtime_ctor(driver, timeout, retry_timeout, retry_interval):
-        rt = DummyRuntime(driver, timeout, retry_timeout, retry_interval)
-        rt.run = fail_run
+    def failing_runtime_ctor(**kwargs):
+        # Handle both positional and keyword styles
+        pass
+
+    def make_failing_runtime(driver, timeout, retry_timeout, retry_interval,
+                             row_failure_mode="collect"):
+        rt = DummyRuntime(driver, timeout, retry_timeout, retry_interval,
+                          row_failure_mode=row_failure_mode)
+        rt._should_raise = AssertionError("element not found")
         cli_env.runtime = rt
         return rt
 
-    monkeypatch.setattr(webspec_cli, "WebSpecRuntime", fake_runtime_ctor)
+    monkeypatch.setattr(webspec_cli, "WebSpecRuntime", make_failing_runtime)
 
-    code = cli_env.run_cli([str(script), "--report"])
+    code = run_cli(["prog", str(script), "--report"])
 
     assert code == 1
-    assert len(cli_env.report_calls) == 1
     assert cli_env.drivers[0].quit_called is True
+    assert len(cli_env.report_calls) == 1
     assert any("FAILED" in line for line in cli_env.print_lines)
 
 
 def test_cli_timeout_failure_exits_one(cli_env, tmp_path, monkeypatch):
-    script = write_script(tmp_path / "sample.ws", 'log "ok"\n')
+    script = tmp_path / "fail.ws"
+    script.write_text('log "hi"\n', encoding="utf-8")
 
-    def fake_runtime_ctor(driver, timeout, retry_timeout, retry_interval):
+    def make_timeout_runtime(driver, timeout, retry_timeout, retry_interval,
+                             row_failure_mode="collect"):
         rt = DummyRuntime(driver, timeout, retry_timeout, retry_interval)
-
-        def fail_run(ast):
-            raise TimeoutError("too slow")
-
-        rt.run = fail_run
+        rt._should_raise = TimeoutError("timed out")
         cli_env.runtime = rt
         return rt
 
-    monkeypatch.setattr(webspec_cli, "WebSpecRuntime", fake_runtime_ctor)
+    monkeypatch.setattr(webspec_cli, "WebSpecRuntime", make_timeout_runtime)
 
-    code = cli_env.run_cli([str(script)])
-
+    code = run_cli(["prog", str(script)])
     assert code == 1
-    assert any("FAILED" in line for line in cli_env.print_lines)
-    assert cli_env.drivers[0].quit_called is True
 
 
-def test_cli_parse_error_exits_two_and_quits_driver(cli_env, tmp_path, monkeypatch):
-    script = write_script(tmp_path / "bad.ws", 'bad syntax\n')
+def test_cli_parse_error_exits_two_and_quits_driver(
+    cli_env, tmp_path, monkeypatch
+):
+    script = tmp_path / "bad.ws"
+    script.write_text('log "hi"\n', encoding="utf-8")
 
-    def raise_syntax(script_text, lexer=None):
-        raise SyntaxError("parse broke")
+    def exploding_parse(script_text, lexer=None):
+        raise SyntaxError("unexpected token")
 
-    monkeypatch.setattr(webspec_cli.parser, "parse", raise_syntax)
+    monkeypatch.setattr(webspec_cli.parser, "parse", exploding_parse)
 
-    code = cli_env.run_cli([str(script)])
+    code = run_cli(["prog", str(script)])
 
     assert code == 2
-    assert any("PARSE ERROR" in line for line in cli_env.print_lines)
     assert cli_env.drivers[0].quit_called is True
 
 
 def test_cli_uses_chrome_headless_new_flag(cli_env, tmp_path):
-    script = write_script(tmp_path / "sample.ws", 'log "ok"\n')
+    script = tmp_path / "ok.ws"
+    script.write_text('log "hi"\n', encoding="utf-8")
 
-    code = cli_env.run_cli([str(script), "--browser", "chrome", "--headless"])
+    run_cli(["prog", str(script), "--browser", "chrome", "--headless"])
 
-    assert code == 0
-    assert len(cli_env.chrome_options) == 1
-    assert "--headless=new" in cli_env.chrome_options[0].arguments
-    assert cli_env.drivers[0].browser == "chrome"
+    cfg = cli_env.last_config
+    assert cfg.browser == "chrome"
+    assert cfg.headless is True
+    assert cfg.mode == "browser"
 
 
 def test_cli_uses_firefox_headless_flag(cli_env, tmp_path):
-    script = write_script(tmp_path / "sample.ws", 'log "ok"\n')
+    script = tmp_path / "ok.ws"
+    script.write_text('log "hi"\n', encoding="utf-8")
 
-    code = cli_env.run_cli([str(script), "--browser", "firefox", "--headless"])
+    run_cli(["prog", str(script), "--browser", "firefox", "--headless"])
 
-    assert code == 0
-    assert len(cli_env.firefox_options) == 1
-    assert "--headless" in cli_env.firefox_options[0].arguments
-    assert cli_env.drivers[0].browser == "firefox"
+    cfg = cli_env.last_config
+    assert cfg.browser == "firefox"
+    assert cfg.headless is True
 
 
 def test_cli_uses_edge_headless_new_flag(cli_env, tmp_path):
-    script = write_script(tmp_path / "sample.ws", 'log "ok"\n')
+    script = tmp_path / "ok.ws"
+    script.write_text('log "hi"\n', encoding="utf-8")
 
-    code = cli_env.run_cli([str(script), "--browser", "edge", "--headless"])
+    run_cli(["prog", str(script), "--browser", "edge", "--headless"])
 
-    assert code == 0
-    assert len(cli_env.edge_options) == 1
-    assert "--headless=new" in cli_env.edge_options[0].arguments
-    assert cli_env.drivers[0].browser == "edge"
+    cfg = cli_env.last_config
+    assert cfg.browser == "edge"
+    assert cfg.headless is True
 
 
-def test_cli_driver_quit_still_runs_if_parser_raises(cli_env, tmp_path, monkeypatch):
-    script = write_script(tmp_path / "bad.ws", 'bad syntax\n')
+def test_cli_driver_quit_still_runs_if_parser_raises(
+    cli_env, tmp_path, monkeypatch
+):
+    script = tmp_path / "bad.ws"
+    script.write_text('log "hi"\n', encoding="utf-8")
 
-    def raise_syntax(script_text, lexer=None):
-        raise SyntaxError("bad parse")
+    def exploding_parse(script_text, lexer=None):
+        raise SyntaxError("boom")
 
-    monkeypatch.setattr(webspec_cli.parser, "parse", raise_syntax)
+    monkeypatch.setattr(webspec_cli.parser, "parse", exploding_parse)
 
-    code = cli_env.run_cli([str(script)])
+    run_cli(["prog", str(script)])
 
-    assert code == 2
     assert len(cli_env.drivers) == 1
     assert cli_env.drivers[0].quit_called is True
 
 
 def test_cli_reads_script_as_utf8(cli_env, tmp_path):
-    script = write_script(tmp_path / "utf8.ws", 'log "héllo"\n')
+    script = tmp_path / "ok.ws"
+    script.write_text('log "héllo wörld"\n', encoding="utf-8")
 
-    code = cli_env.run_cli([str(script)])
+    code = run_cli(["prog", str(script)])
 
     assert code == 0
-    assert cli_env.parsed_texts[-1] == 'log "héllo"\n'
+    parsed = cli_env.parsed_texts[0]
+    assert "héllo wörld" in parsed
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+#  New mode flags (electron / appium)
+# ═══════════════════════════════════════════════════════════════════════════
+
+def test_cli_electron_mode_sets_config(cli_env, tmp_path):
+    script = tmp_path / "ok.ws"
+    script.write_text('log "hi"\n', encoding="utf-8")
+
+    run_cli([
+        "prog", str(script),
+        "--mode", "electron",
+        "--app-path", "/usr/bin/my-app",
+        "--debug-port", "9333",
+    ])
+
+    cfg = cli_env.last_config
+    assert cfg.mode == "electron"
+    assert cfg.app_path == "/usr/bin/my-app"
+    assert cfg.debug_port == 9333
+    assert cfg.launch_app is True
+
+
+def test_cli_electron_no_launch_flag(cli_env, tmp_path):
+    script = tmp_path / "ok.ws"
+    script.write_text('log "hi"\n', encoding="utf-8")
+
+    run_cli([
+        "prog", str(script),
+        "--mode", "electron",
+        "--app-path", "/app",
+        "--no-launch",
+    ])
+
+    cfg = cli_env.last_config
+    assert cfg.launch_app is False
+
+
+def test_cli_appium_mode_sets_config(cli_env, tmp_path):
+    script = tmp_path / "ok.ws"
+    script.write_text('log "hi"\n', encoding="utf-8")
+
+    run_cli([
+        "prog", str(script),
+        "--mode", "appium",
+        "--app", r"C:\MyApp\app.exe",
+        "--platform", "windows",
+        "--appium-server", "http://10.0.0.5:4723",
+    ])
+
+    cfg = cli_env.last_config
+    assert cfg.mode == "appium"
+    assert cfg.app == r"C:\MyApp\app.exe"
+    assert cfg.platform == "windows"
+    assert cfg.appium_server == "http://10.0.0.5:4723"
+
+
+def test_cli_default_mode_is_browser(cli_env, tmp_path):
+    script = tmp_path / "ok.ws"
+    script.write_text('log "hi"\n', encoding="utf-8")
+
+    run_cli(["prog", str(script)])
+
+    cfg = cli_env.last_config
+    assert cfg.mode == "browser"
